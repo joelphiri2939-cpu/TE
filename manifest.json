@@ -12,6 +12,14 @@
   "lang": "en",
   "dir": "ltr",
   "categories": ["education", "productivity"],
+  "prefer_related_applications": false,
+  "launch_handler": {
+    "client_mode": "auto"
+  },
+  "display_override": ["window-controls-overlay", "standalone", "browser"],
+  "edge_side_panel": {
+    "preferred_width": 400
+  },
   "icons": [
     {
       "src": "icons/icon-72.png",
