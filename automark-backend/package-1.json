@@ -1,0 +1,18 @@
+{
+  "name": "teachmate-automark-backend",
+  "version": "1.0.0",
+  "description": "Backend proxy for TeachMate AutoMark - keeps OpenRouter API key server-side",
+  "main": "server.js",
+  "type": "commonjs",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "dependencies": {
+    "express": "^4.19.2",
+    "cors": "^2.8.5",
+    "firebase-admin": "^12.1.0"
+  }
+}
