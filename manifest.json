@@ -3,6 +3,7 @@
   "short_name": "TeachMate",
   "description": "TeachMate 3.0 is a classroom management app for teachers - attendance, results, fees, lesson planning and more, built for Zambian schools.",
   "start_url": "./",
+  "id": "./",
   "scope": "./",
   "display": "standalone",
   "orientation": "portrait-primary",
