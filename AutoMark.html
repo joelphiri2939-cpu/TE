@@ -1,0 +1,1131 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1, user-scalable=no">
+<title>TeachMate AutoMark</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<style>
+  :root{
+    --primary:#0f6a48; --primary-light:#14895e; --primary-dark:#0a4d34;
+    --bg:#f4f7f6; --card:#ffffff; --ink:#1a2b25; --muted:#5c6b65;
+    --border:#dde5e1; --warn:#b8860b; --danger:#c0392b; --ok:#0f6a48;
+    --radius:14px;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;
+       background:var(--bg);color:var(--ink);}
+  .wrap{max-width:720px;margin:0 auto;padding:16px 16px 100px;}
+  header.top{display:flex;align-items:center;justify-content:space-between;
+       padding:14px 16px;background:var(--primary);color:#fff;position:sticky;top:0;z-index:50;
+       box-shadow:0 2px 8px rgba(0,0,0,.15);}
+  header.top h1{font-size:17px;margin:0;font-weight:700;letter-spacing:.2px;}
+  header.top .sub{font-size:11px;opacity:.85;font-weight:400;}
+  .icon-btn{background:rgba(255,255,255,.15);border:none;color:#fff;width:36px;height:36px;
+       border-radius:10px;font-size:16px;cursor:pointer;}
+  .card{background:var(--card);border-radius:var(--radius);padding:18px;margin-bottom:14px;
+       box-shadow:0 1px 3px rgba(0,0,0,.06);border:1px solid var(--border);}
+  .card h2{font-size:15px;margin:0 0 12px;color:var(--primary-dark);}
+  label{display:block;font-size:12.5px;font-weight:600;color:var(--muted);margin:10px 0 5px;}
+  input[type=text],input[type=date],input[type=number],select,textarea{
+       width:100%;padding:11px 12px;border:1.5px solid var(--border);border-radius:10px;
+       font-size:15px;background:#fff;color:var(--ink);}
+  textarea{resize:vertical;min-height:70px;font-family:inherit;}
+  .btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;
+       padding:12px 18px;border-radius:11px;border:none;font-size:14.5px;font-weight:700;
+       cursor:pointer;transition:transform .08s;}
+  .btn:active{transform:scale(.97);}
+  .btn.primary{background:var(--primary);color:#fff;width:100%;}
+  .btn.primary:disabled{background:#a8bdb4;cursor:not-allowed;}
+  .btn.ghost{background:#eef3f0;color:var(--primary-dark);}
+  .btn.danger{background:#fdeceb;color:var(--danger);}
+  .btn.small{padding:8px 12px;font-size:13px;}
+  .btn.block{width:100%;margin-top:8px;}
+  .stepper{display:flex;gap:4px;margin-bottom:16px;}
+  .stepper .dot{flex:1;height:5px;border-radius:3px;background:var(--border);}
+  .stepper .dot.done{background:var(--primary);}
+  .stepper .dot.active{background:var(--primary-light);}
+  .toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);
+       background:#20302a;color:#fff;padding:12px 20px;border-radius:10px;font-size:14px;
+       z-index:200;max-width:90%;box-shadow:0 4px 16px rgba(0,0,0,.3);opacity:0;
+       transition:opacity .25s;pointer-events:none;}
+  .toast.show{opacity:1;}
+  .toast.error{background:#5c1e17;}
+  .toast.ok{background:#0f4d34;}
+  .badge{display:inline-block;padding:3px 9px;border-radius:20px;font-size:11px;font-weight:700;}
+  .badge.ok{background:#e3f3ec;color:var(--ok);}
+  .badge.warn{background:#fdf3dd;color:var(--warn);}
+  .badge.danger{background:#fdeceb;color:var(--danger);}
+  .badge.muted{background:#eef1f0;color:var(--muted);}
+  .row{display:flex;gap:8px;}
+  .row>*{flex:1;}
+  .sheet-item{display:flex;align-items:center;gap:10px;padding:10px;border:1.5px solid var(--border);
+       border-radius:10px;margin-bottom:8px;}
+  .sheet-item img{width:44px;height:44px;object-fit:cover;border-radius:8px;flex-shrink:0;}
+  .sheet-item .info{flex:1;min-width:0;}
+  .sheet-item .info .name{font-weight:700;font-size:14px;}
+  .sheet-item .info .meta{font-size:12px;color:var(--muted);}
+  .qa-row{border-top:1px solid var(--border);padding:10px 0;}
+  .qa-row:first-child{border-top:none;}
+  .qa-row .qno{font-weight:700;font-size:13px;color:var(--primary-dark);}
+  .diff-old{color:var(--danger);text-decoration:line-through;}
+  .diff-new{color:var(--ok);font-weight:700;}
+  .overlay{position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:100;
+       display:flex;align-items:flex-end;justify-content:center;}
+  .sheet-modal{background:#fff;width:100%;max-width:720px;border-radius:16px 16px 0 0;
+       padding:20px;max-height:88vh;overflow-y:auto;}
+  .sheet-modal h3{margin-top:0;}
+  .spinner{width:18px;height:18px;border:2.5px solid rgba(255,255,255,.35);
+       border-top-color:#fff;border-radius:50%;animation:spin .7s linear infinite;display:inline-block;}
+  @keyframes spin{to{transform:rotate(360deg);}}
+  .loading-block{display:flex;align-items:center;gap:10px;padding:16px;color:var(--muted);font-size:14px;}
+  .loading-block .spinner{border-color:rgba(15,106,72,.25);border-top-color:var(--primary);}
+  .hidden{display:none!important;}
+  .score-input{width:70px;text-align:center;font-weight:700;}
+  table.score-table{width:100%;border-collapse:collapse;font-size:13.5px;}
+  table.score-table th,table.score-table td{padding:8px 6px;text-align:left;border-bottom:1px solid var(--border);}
+  .file-drop{border:2px dashed var(--border);border-radius:12px;padding:24px;text-align:center;
+       color:var(--muted);cursor:pointer;}
+  .file-drop:active{background:#f0f5f2;}
+  .center{text-align:center;}
+  .muted{color:var(--muted);font-size:13px;}
+  .login-wrap{max-width:380px;margin:60px auto;padding:0 20px;}
+  .login-wrap .card{padding:28px 22px;}
+  .login-wrap h1{text-align:center;color:var(--primary-dark);font-size:22px;margin-bottom:4px;}
+  .login-wrap .tag{text-align:center;color:var(--muted);font-size:13px;margin-bottom:20px;}
+</style>
+</head>
+<body>
+
+<div id="loginScreen" class="login-wrap">
+  <div class="card center">
+    <h1>AutoMark</h1>
+    <div class="tag">TeachMate's AI marking engine</div>
+    <div id="sessionCheckMsg" class="loading-block" style="justify-content:center;">
+      <span class="spinner"></span> Checking your TeachMate sign-in…
+    </div>
+    <div id="notSignedInMsg" class="hidden">
+      <div class="muted" style="margin:14px 0;">
+        You're not signed in. AutoMark uses your TeachMate login — open TeachMate first,
+        sign in there, then launch AutoMark from the 🤖 Auto Mark button in Results.
+      </div>
+      <button class="btn primary block" id="goToTeachMateBtn">Open TeachMate</button>
+    </div>
+  </div>
+</div>
+
+<div id="appScreen" class="hidden">
+  <header class="top">
+    <div>
+      <h1>AutoMark</h1>
+      <div class="sub" id="headerSub">—</div>
+    </div>
+    <div style="display:flex;gap:8px;">
+      <button class="icon-btn" id="settingsBtn" title="Settings">⚙️</button>
+      <button class="icon-btn" id="logoutBtn" title="Sign out">⎋</button>
+    </div>
+  </header>
+
+  <div class="wrap">
+    <div class="stepper" id="stepper"></div>
+    <div id="stepContainer"></div>
+  </div>
+</div>
+
+<div id="toast" class="toast"></div>
+
+<!-- Settings modal -->
+<div id="settingsOverlay" class="overlay hidden">
+  <div class="sheet-modal">
+    <h3>Settings</h3>
+    <label>Backend URL (Render)</label>
+    <input type="text" id="setBackendUrl" placeholder="https://your-service.onrender.com">
+    <label>AI Model (OpenRouter slug)</label>
+    <input type="text" id="setModel" placeholder="google/gemini-2.5-flash">
+    <div class="muted" style="margin-top:6px;">
+      This is where marking requests go. Your OpenRouter and OCR.space keys live on the
+      Render server, never here.
+    </div>
+    <button class="btn primary block" id="saveSettingsBtn" style="margin-top:16px;">Save</button>
+    <button class="btn ghost block" id="closeSettingsBtn" style="margin-top:8px;">Close</button>
+  </div>
+</div>
+
+<!-- Generic modal (sheet review, grading review, remark) -->
+<div id="genericOverlay" class="overlay hidden">
+  <div class="sheet-modal" id="genericModalContent"></div>
+</div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.0/firebase-app.js";
+import {
+  getAuth, onAuthStateChanged, signOut
+} from "https://www.gstatic.com/firebasejs/11.0.0/firebase-auth.js";
+import {
+  getFirestore, doc, getDoc, collection, getDocs, query, where, setDoc
+} from "https://www.gstatic.com/firebasejs/11.0.0/firebase-firestore.js";
+
+// ── Same Firebase project as TeachMate3.0 ─────────────────────────────────
+const firebaseConfig = {
+  apiKey: "AIzaSyC3Uco6S1xyoxdgjbNtpAe_ofUtG0nI0XI",
+  authDomain: "grok-7568a.firebaseapp.com",
+  projectId: "grok-7568a",
+  storageBucket: "grok-7568a.appspot.com",
+  messagingSenderId: "802272835730",
+  appId: "1:802272835730:web:f80f3c986cebbfcd51ce4b"
+};
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const fdb = getFirestore(app);
+
+pdfjsLib.GlobalWorkerOptions.workerSrc = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
+
+const CATEGORIES = ['Weekly Test','Assignment','Project Work','Midterm Test','End of Term Test','Final Examination'];
+const LEVELS = ['Primary','Junior Secondary','Senior Secondary'];
+
+// ── Global state ───────────────────────────────────────────────────────────
+const state = {
+  user: null, idToken: null,
+  profile: { uid:null, schoolId:null, name:'', role:'teacher', assignedClasses:null },
+  classes: [], students: [],
+  setup: { classId:'', className:'', subject:'', testName:'', category:CATEGORIES[0], level:LEVELS[0], date:'' },
+  answerKey: { sourceType:null, rawText:'', questions:[], confirmed:false },
+  sheets: [], // {studentId, studentName, file, sourceType, rawText, cleanedText, ocrFlag, misspellings, marking, status, remarkHistory}
+  step: 1,
+  settings: { backendUrl: localStorage.getItem('am_backendUrl') || '', model: localStorage.getItem('am_model') || 'google/gemini-2.5-flash' }
+};
+window.__AM_STATE = state; // debugging aid
+
+function toast(msg, kind=''){
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.className = 'toast show ' + kind;
+  clearTimeout(window.__toastTimer);
+  window.__toastTimer = setTimeout(()=>{ t.className='toast'; }, 3200);
+}
+
+// ── Auth — AutoMark has no login of its own. It relies entirely on
+// TeachMate's Firebase session: since both pages share the same origin
+// (github.io) and the same Firebase project, signing in on TeachMate keeps
+// that session in the browser, and this page just reads it via
+// onAuthStateChanged. If nobody's signed in (e.g. AutoMark was opened
+// directly, bookmarked, or the session expired), we point back to TeachMate
+// rather than offering our own login form. ─────────────────────────────────
+document.getElementById('logoutBtn').addEventListener('click', ()=> signOut(auth));
+document.getElementById('goToTeachMateBtn').addEventListener('click', ()=>{
+  window.location.href = 'index.html';
+});
+
+onAuthStateChanged(auth, async (user)=>{
+  if(!user){
+    document.getElementById('sessionCheckMsg').classList.add('hidden');
+    document.getElementById('notSignedInMsg').classList.remove('hidden');
+    document.getElementById('loginScreen').classList.remove('hidden');
+    document.getElementById('appScreen').classList.add('hidden');
+    return;
+  }
+  state.user = user;
+  state.idToken = await user.getIdToken();
+  // refresh token every 50 min while app is open
+  clearInterval(window.__tokenTimer);
+  window.__tokenTimer = setInterval(async ()=>{ state.idToken = await user.getIdToken(true); }, 50*60*1000);
+
+  try{
+    const uSnap = await getDoc(doc(fdb,'users', user.uid));
+    if(!uSnap.exists()){
+      toast('No TeachMate profile found for this account.', 'error');
+      return;
+    }
+    const uData = uSnap.data();
+    state.profile = {
+      uid: user.uid,
+      schoolId: uData.schoolId || null,
+      name: uData.name || user.email,
+      role: uData.role || 'teacher',
+      assignedClasses: uData.assignedClasses || null // null/undefined = sees all classes (e.g. admin)
+    };
+    if(!state.profile.schoolId){ toast('Your account has no schoolId set.', 'error'); return; }
+
+    document.getElementById('headerSub').textContent = state.profile.name + ' · ' + state.profile.schoolId;
+    document.getElementById('loginScreen').classList.add('hidden');
+    document.getElementById('appScreen').classList.remove('hidden');
+
+    await loadClasses();
+    goToStep(1);
+  }catch(e){
+    console.error(e);
+    toast('Failed to load your profile: ' + e.message, 'error');
+  }
+});
+
+async function loadClasses(){
+  const snap = await getDocs(collection(fdb,'schools', state.profile.schoolId, 'classes'));
+  let all = snap.docs.map(d=>({ id:d.id, ...d.data() }));
+  if(Array.isArray(state.profile.assignedClasses) && state.profile.assignedClasses.length){
+    const allowed = new Set(state.profile.assignedClasses);
+    all = all.filter(c => allowed.has(c.id));
+  }
+  state.classes = all;
+}
+
+async function loadStudentsForClass(classId){
+  const snap = await getDocs(query(collection(fdb,'schools', state.profile.schoolId, 'students'), where('classId','==',classId)));
+  state.students = snap.docs.map(d=>({ id:d.id, ...d.data() }));
+}
+
+// ── Settings modal ─────────────────────────────────────────────────────────
+document.getElementById('settingsBtn').addEventListener('click', ()=>{
+  document.getElementById('setBackendUrl').value = state.settings.backendUrl;
+  document.getElementById('setModel').value = state.settings.model;
+  document.getElementById('settingsOverlay').classList.remove('hidden');
+});
+document.getElementById('closeSettingsBtn').addEventListener('click', ()=>{
+  document.getElementById('settingsOverlay').classList.add('hidden');
+});
+document.getElementById('saveSettingsBtn').addEventListener('click', ()=>{
+  let url = document.getElementById('setBackendUrl').value.trim().replace(/\/$/,'');
+  const model = document.getElementById('setModel').value.trim() || 'google/gemini-2.5-flash';
+  state.settings.backendUrl = url;
+  state.settings.model = model;
+  localStorage.setItem('am_backendUrl', url);
+  localStorage.setItem('am_model', model);
+  document.getElementById('settingsOverlay').classList.add('hidden');
+  toast('Settings saved.', 'ok');
+});
+
+// ── Generic modal helpers ──────────────────────────────────────────────────
+function openModal(html){
+  document.getElementById('genericModalContent').innerHTML = html;
+  document.getElementById('genericOverlay').classList.remove('hidden');
+}
+function closeModal(){
+  document.getElementById('genericOverlay').classList.add('hidden');
+  document.getElementById('genericModalContent').innerHTML = '';
+}
+window.__closeModal = closeModal;
+
+// ── Stepper / navigation ────────────────────────────────────────────────────
+const STEP_LABELS = ['Setup','Answer Key','Student Sheets','Grading','Review & Approve','Save'];
+function renderStepper(){
+  const el = document.getElementById('stepper');
+  el.innerHTML = STEP_LABELS.map((_,i)=>{
+    const n = i+1;
+    const cls = n < state.step ? 'done' : (n === state.step ? 'active' : '');
+    return `<div class="dot ${cls}"></div>`;
+  }).join('');
+}
+function goToStep(n){
+  state.step = n;
+  renderStepper();
+  const renderers = [null, renderStep1, renderStep2, renderStep3, renderStep4, renderStep5, renderStep6];
+  renderers[n]();
+  window.scrollTo({top:0, behavior:'smooth'});
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+//  STEP 1 — Setup
+// ═══════════════════════════════════════════════════════════════════════════
+function renderStep1(){
+  const c = document.getElementById('stepContainer');
+  c.innerHTML = `
+    <div class="card">
+      <h2>1 · Test Setup</h2>
+      <label>Class</label>
+      <select id="s1-class">
+        <option value="">Select a class…</option>
+        ${state.classes.map(c=>`<option value="${c.id}" ${state.setup.classId===c.id?'selected':''}>${esc(c.name||c.id)}</option>`).join('')}
+      </select>
+      <label>Subject</label>
+      <input type="text" id="s1-subject" value="${esc(state.setup.subject)}" placeholder="e.g. Mathematics">
+      <label>Test / Exam Name</label>
+      <input type="text" id="s1-testname" value="${esc(state.setup.testName)}" placeholder="e.g. Term 2 Midterm">
+      <div class="row">
+        <div>
+          <label>Category</label>
+          <select id="s1-category">${CATEGORIES.map(c=>`<option ${c===state.setup.category?'selected':''}>${c}</option>`).join('')}</select>
+        </div>
+        <div>
+          <label>Level</label>
+          <select id="s1-level">${LEVELS.map(l=>`<option ${l===state.setup.level?'selected':''}>${l}</option>`).join('')}</select>
+        </div>
+      </div>
+      <label>Date</label>
+      <input type="date" id="s1-date" value="${esc(state.setup.date || new Date().toISOString().slice(0,10))}">
+      <button class="btn primary block" id="s1-continue" style="margin-top:16px;">Continue →</button>
+    </div>`;
+
+  document.getElementById('s1-continue').addEventListener('click', async ()=>{
+    const classId = document.getElementById('s1-class').value;
+    const subject = document.getElementById('s1-subject').value.trim();
+    const testName = document.getElementById('s1-testname').value.trim();
+    if(!classId){ toast('Select a class.','error'); return; }
+    if(!subject || !testName){ toast('Enter subject and test name.','error'); return; }
+    const cls = state.classes.find(c=>c.id===classId);
+    state.setup = {
+      classId, className: cls ? (cls.name||cls.id) : classId,
+      subject, testName,
+      category: document.getElementById('s1-category').value,
+      level: document.getElementById('s1-level').value,
+      date: document.getElementById('s1-date').value
+    };
+    const btn = document.getElementById('s1-continue');
+    btn.disabled = true; btn.innerHTML = '<span class="spinner"></span> Loading roster…';
+    try{
+      await loadStudentsForClass(classId);
+      if(!state.students.length){ toast('This class has no students on record.', 'error'); btn.disabled=false; btn.textContent='Continue →'; return; }
+      goToStep(2);
+    }catch(e){
+      toast('Failed to load students: '+e.message, 'error');
+      btn.disabled=false; btn.textContent='Continue →';
+    }
+  });
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+//  STEP 2 — Answer Key upload, extraction, AI structuring, teacher confirm
+// ═══════════════════════════════════════════════════════════════════════════
+function renderStep2(){
+  const c = document.getElementById('stepContainer');
+  const ak = state.answerKey;
+  c.innerHTML = `
+    <div class="card">
+      <h2>2 · Answer Key</h2>
+      <div class="muted">${esc(state.setup.subject)} · ${esc(state.setup.testName)} · ${esc(state.setup.className)}</div>
+      ${!ak.rawText ? `
+        <label style="margin-top:14px;">Upload the correct answer sheet (photo or PDF)</label>
+        <div class="file-drop" id="ak-drop">📄 Tap to choose a photo or PDF of the answer key</div>
+        <input type="file" id="ak-file" accept="image/*,.pdf" capture="environment" class="hidden">
+        <div id="ak-status"></div>
+      ` : `
+        <div id="ak-editor"></div>
+      `}
+      <div style="display:flex;gap:10px;margin-top:16px;">
+        <button class="btn ghost" id="s2-back">← Back</button>
+        <button class="btn primary" id="s2-continue" style="flex:1;" ${ak.confirmed?'':'disabled'}>Continue →</button>
+      </div>
+    </div>`;
+
+  document.getElementById('s2-back').addEventListener('click', ()=>goToStep(1));
+  document.getElementById('s2-continue').addEventListener('click', ()=>{ if(state.answerKey.confirmed) goToStep(3); });
+
+  if(!ak.rawText){
+    document.getElementById('ak-drop').addEventListener('click', ()=>document.getElementById('ak-file').click());
+    document.getElementById('ak-file').addEventListener('change', async (e)=>{
+      const file = e.target.files[0];
+      if(!file) return;
+      const statusEl = document.getElementById('ak-status');
+      statusEl.innerHTML = `<div class="loading-block"><span class="spinner"></span> Reading the answer key…</div>`;
+      try{
+        const ing = await ingestFile(file);
+        if(!ing.text || ing.text.replace(/\s/g,'').length < 5){
+          statusEl.innerHTML = `<div class="badge danger">Could not read this file</div><div class="muted" style="margin-top:6px;">${esc(ing.ocrError||'No readable text found. Try a clearer photo or a different file.')}</div>`;
+          return;
+        }
+        statusEl.innerHTML = `<div class="loading-block"><span class="spinner"></span> AI is structuring the questions…</div>`;
+        const { system, user } = PROMPTS.parseAnswerKey({ subject: state.setup.subject, testName: state.setup.testName, category: state.setup.category, level: state.setup.level, rawText: ing.text });
+        const raw = await callAIText(system, user);
+        const parsed = parseAIJson(raw);
+        if(!parsed.questions || !parsed.questions.length) throw new Error('AI returned no questions — try re-uploading a clearer key.');
+        state.answerKey = { sourceType: ing.sourceType, rawText: ing.text, questions: parsed.questions, confirmed:false };
+        renderStep2();
+      }catch(err){
+        console.error(err);
+        statusEl.innerHTML = `<div class="badge danger">Failed</div><div class="muted" style="margin-top:6px;">${esc(err.message)}</div>
+          <button class="btn ghost small" style="margin-top:8px;" onclick="document.getElementById('ak-file').value='';document.getElementById('ak-status').innerHTML=''">Try again</button>`;
+      }
+    });
+  } else {
+    renderAnswerKeyEditor();
+  }
+}
+
+function renderAnswerKeyEditor(){
+  const el = document.getElementById('ak-editor');
+  const ak = state.answerKey;
+  el.innerHTML = `
+    <div class="muted" style="margin:10px 0 6px;">Review the extracted questions. Edit anything the AI got wrong before continuing — this key is what every student's script will be graded against.</div>
+    <div id="ak-rows"></div>
+    <button class="btn ghost small" id="ak-addrow" style="margin-top:8px;">+ Add question</button>
+    <div style="display:flex;gap:10px;margin-top:14px;">
+      <button class="btn danger small" id="ak-reset">Re-upload</button>
+      <button class="btn primary" id="ak-confirm" style="flex:1;">✓ Confirm Answer Key</button>
+    </div>`;
+  const rowsEl = document.getElementById('ak-rows');
+  function draw(){
+    rowsEl.innerHTML = ak.questions.map((q,i)=>`
+      <div class="qa-row">
+        <div class="row">
+          <input type="text" data-i="${i}" data-f="no" value="${esc(q.no)}" placeholder="No." style="max-width:60px;">
+          <input type="text" data-i="${i}" data-f="answer" value="${esc(q.answer)}" placeholder="Expected answer" style="flex:3;">
+          <input type="number" data-i="${i}" data-f="marks" value="${q.marks}" placeholder="Marks" style="max-width:70px;">
+          <button class="btn danger small" data-del="${i}">✕</button>
+        </div>
+      </div>`).join('');
+    rowsEl.querySelectorAll('input').forEach(inp=>{
+      inp.addEventListener('input', ()=>{
+        const i = +inp.dataset.i, f = inp.dataset.f;
+        ak.questions[i][f] = f==='marks' ? (parseFloat(inp.value)||0) : inp.value;
+      });
+    });
+    rowsEl.querySelectorAll('[data-del]').forEach(btn=>{
+      btn.addEventListener('click', ()=>{ ak.questions.splice(+btn.dataset.del,1); draw(); });
+    });
+  }
+  draw();
+  document.getElementById('ak-addrow').addEventListener('click', ()=>{
+    ak.questions.push({ no:String(ak.questions.length+1), answer:'', marks:1 });
+    draw();
+  });
+  document.getElementById('ak-reset').addEventListener('click', ()=>{
+    state.answerKey = { sourceType:null, rawText:'', questions:[], confirmed:false };
+    renderStep2();
+  });
+  document.getElementById('ak-confirm').addEventListener('click', ()=>{
+    if(!ak.questions.length){ toast('Add at least one question.','error'); return; }
+    ak.confirmed = true;
+    toast('Answer key confirmed.', 'ok');
+    renderStep2();
+  });
+}
+
+function esc(s){ return String(s??'').replace(/[&<>"']/g, m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m])); }
+
+// ═══════════════════════════════════════════════════════════════════════════
+//  BACKEND CALLS — every OpenRouter / OCR.space request goes through Render.
+//  Keys never touch this file.
+// ═══════════════════════════════════════════════════════════════════════════
+async function backendPost(path, body){
+  if(!state.settings.backendUrl){
+    throw new Error('Set your Render backend URL in Settings (⚙️) first.');
+  }
+  const res = await fetch(state.settings.backendUrl + path, {
+    method:'POST',
+    headers:{
+      'Content-Type':'application/json',
+      'Authorization':'Bearer ' + state.idToken
+    },
+    body: JSON.stringify(body)
+  });
+  const data = await res.json().catch(()=>({}));
+  if(!res.ok){
+    throw new Error(data.error || ('Backend error ' + res.status));
+  }
+  return data;
+}
+
+async function callOCR(imageDataUrl){
+  const data = await backendPost('/api/ocr', { imageDataUrl });
+  return data; // {text, exitCode, ocrError}
+}
+
+async function callAIText(systemPrompt, userPrompt){
+  const data = await backendPost('/api/grade', { systemPrompt, userPrompt, model: state.settings.model });
+  return data.raw || '';
+}
+
+// Strips ```json fences etc and parses. Throws on failure.
+function parseAIJson(raw){
+  let cleaned = String(raw).trim();
+  cleaned = cleaned.replace(/^```json\s*/i,'').replace(/^```\s*/,'').replace(/```\s*$/,'');
+  const firstBrace = cleaned.search(/[\{\[]/);
+  if(firstBrace > 0) cleaned = cleaned.slice(firstBrace);
+  return JSON.parse(cleaned);
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+//  PROMPTS — this is the marking engine's actual judgment. Every instruction
+//  here encodes a real marking practice: partial credit for correct meaning
+//  in different words, zero tolerance dropped for spelling (that's already
+//  resolved before this stage), proportional credit for multi-part answers,
+//  and a hard requirement to show its reasoning so a teacher can sanity-check
+//  a score at a glance instead of trusting a black box.
+// ═══════════════════════════════════════════════════════════════════════════
+const PROMPTS = {
+
+  // Turns raw answer-key text (however messily extracted) into a clean,
+  // numbered structure the rest of the pipeline can rely on.
+  parseAnswerKey(ctx){
+    return {
+      system: `You are an exam-key digitisation assistant for a Zambian school system called TeachMate.
+Your only job is to convert raw, possibly messy extracted text of a teacher's answer key into strict JSON.
+Do not grade anything here. Do not invent questions that are not present. Do not omit any question you can find.
+If a question's mark allocation is not explicitly written, set "marks" to 1.
+If the key uses letters (A, B, C) for multiple choice, keep the letter as the "answer" value.
+If the key gives model/sample essay answers, keep the full expected answer text.
+Output ONLY valid JSON, no markdown fences, no commentary, matching exactly this shape:
+{"questions":[{"no":"1","answer":"...","marks":2}, ...]}`,
+      user: `Subject: ${ctx.subject}
+Test/Exam: ${ctx.testName}
+Category: ${ctx.category}
+Level: ${ctx.level}
+
+Raw extracted answer key text:
+"""
+${ctx.rawText}
+"""
+
+Return the strict JSON described in the system instructions.`
+    };
+  },
+
+  // Reviews OCR'd student handwriting for likely transcription errors before
+  // grading ever happens. Grading must never run on text the teacher hasn't
+  // confirmed is an accurate reading of the student's actual handwriting.
+  cleanupOCR(ctx){
+    return {
+      system: `You are a careful proofreading assistant reviewing OCR output of a student's
+handwritten exam answers for a Zambian school (subject: ${ctx.subject}, level: ${ctx.level}).
+OCR of handwriting often introduces errors: swapped letters, merged/split words, and genuine
+student misspellings preserved from the original. Your job is ONLY to flag likely errors and
+propose corrections — you do not grade anything here.
+Rules:
+- Only flag a word if you are reasonably confident it's an OCR misread or an unambiguous
+  spelling slip, not a legitimate alternate phrasing or a genuine content error.
+- Never "fix" wording in a way that changes the student's meaning or supplies an answer they
+  did not give. Spelling and OCR-legibility fixes only.
+- Preserve the student's original sentence structure and content exactly aside from the
+  specific flagged words.
+- If nothing needs flagging, return an empty "changes" array and correctedText identical to
+  the input.
+Output ONLY valid JSON, no markdown fences, matching exactly this shape:
+{"correctedText":"...", "changes":[{"original":"...","suggested":"...","reason":"..."}]}`,
+      user: `Raw OCR text of one student's answer sheet:
+"""
+${ctx.rawText}
+"""
+
+Return the strict JSON described in the system instructions.`
+    };
+  },
+
+  // The core marking call: one student's confirmed answer text against the
+  // teacher's confirmed answer key.
+  mark(ctx){
+    return {
+      system: `You are an experienced, fair Zambian school teacher marking a ${ctx.category} in
+${ctx.subject} for a ${ctx.level} class ("${ctx.testName}"). You have marked thousands of scripts
+and you know the practical realities of real student answers. Apply these professional marking
+principles, in order of priority:
+
+1. MEANING OVER WORDING: If a student's answer conveys the same correct meaning as the model
+   answer using different words, phrasing, or structure, award full marks. Do not penalise
+   paraphrasing, different sentence order, or synonyms.
+2. SPELLING IS ALREADY RESOLVED: The text you're given has already been proofread for OCR and
+   spelling errors. Judge only the content and meaning, never penalise wording choices that
+   remain.
+3. PARTIAL CREDIT FOR PARTIAL CORRECTNESS: If a question has multiple parts or multiple
+   expected points (e.g. "list three causes", a multi-step calculation, a multi-clause
+   definition), award marks proportionally for each correct part present, even if other parts
+   are missing or wrong. Never give all-or-nothing on a multi-part question.
+4. RELATED BUT INCOMPLETE ANSWERS: If an answer is on the right topic and shows partial
+   understanding but misses the key point the question asks for, award small partial credit
+   (roughly 20-40% of available marks) rather than zero, unless the marking scheme is strictly
+   objective (e.g. a single correct MCQ letter, an exact numeric answer).
+5. BLANK OR IRRELEVANT: Award zero only when an answer is blank, entirely off-topic, or shows
+   no relevant understanding at all.
+6. OBJECTIVE QUESTIONS: For multiple-choice, single-word, or single-number answers, there is no
+   partial credit — it is either correct (full marks) or incorrect (zero), UNLESS the model
+   answer explicitly allows a range or multiple valid forms.
+7. NEVER exceed a question's maximum marks. Never award negative marks.
+
+For every question, give a short one-sentence rationale a teacher could read in two seconds to
+understand why that score was given — this is what makes the marking trustworthy, not a black box.
+
+Output ONLY valid JSON, no markdown fences, matching exactly this shape:
+{"perQuestion":[{"no":"1","score":1.5,"maxMarks":2,"rationale":"..."}, ...],
+ "total":0,"maxTotal":0,"overallComment":"..."}
+"total" and "maxTotal" must be the sum of all perQuestion scores/maxMarks.`,
+      user: `ANSWER KEY (question number: expected answer, marks available):
+${ctx.keyQuestions.map(q=>`${q.no}. [${q.marks} marks] ${q.answer}`).join('\n')}
+
+STUDENT'S ANSWERS (as confirmed, proofread text):
+"""
+${ctx.studentText}
+"""
+
+Mark every question present in the answer key. If the student did not attempt a question,
+score it 0 with rationale "Not attempted." Return the strict JSON described above.`
+    };
+  },
+
+  // Re-marking after a teacher disapproves and explains what was wrong.
+  // The AI must directly address the stated correction, not just re-run
+  // the same judgment again.
+  remark(ctx){
+    return {
+      system: `You are the same experienced Zambian school teacher revisiting a marking you did
+earlier for ${ctx.subject} (${ctx.category}, ${ctx.level} level, "${ctx.testName}"), because the
+supervising teacher reviewed your marking and pointed out something to correct. Take their
+feedback seriously and specifically — it reflects their judgment of their own student's work and
+should override your prior scoring wherever it conflicts. Re-apply the same professional marking
+principles as before (meaning over wording, partial credit for multi-part and partially-correct
+answers, objective questions are all-or-nothing, never exceed max marks) but this time make sure
+your marking is consistent with what the teacher told you was wrong.
+Output ONLY valid JSON, no markdown fences, matching exactly this shape:
+{"perQuestion":[{"no":"1","score":1.5,"maxMarks":2,"rationale":"..."}, ...],
+ "total":0,"maxTotal":0,"overallComment":"...","changesFromPrevious":"one sentence summary of what you changed and why"}`,
+      user: `ANSWER KEY:
+${ctx.keyQuestions.map(q=>`${q.no}. [${q.marks} marks] ${q.answer}`).join('\n')}
+
+STUDENT'S ANSWERS:
+"""
+${ctx.studentText}
+"""
+
+YOUR PREVIOUS MARKING:
+${JSON.stringify(ctx.previousMarking)}
+
+TEACHER'S FEEDBACK ON WHAT WAS WRONG AND WHAT TO CORRECT:
+"""
+${ctx.teacherFeedback}
+"""
+
+Re-mark taking the teacher's feedback into account. Return the strict JSON described above.`
+    };
+  }
+};
+
+// ═══════════════════════════════════════════════════════════════════════════
+//  FILE INGESTION — the core routing decision from your spec:
+//   "check if uploaded file is readable text or just a photo"
+//
+//  PDF  -> try pdf.js text layer first (fast, free, no OCR needed)
+//          -> if no real text layer found, fall back to OCR.space (it OCRs
+//             scanned PDFs directly, page images included)
+//  Image (jpg/png/etc) -> always OCR.space (there's no text layer to check)
+// ═══════════════════════════════════════════════════════════════════════════
+async function fileToDataUrl(file){
+  return new Promise((resolve,reject)=>{
+    const r = new FileReader();
+    r.onload = ()=> resolve(r.result);
+    r.onerror = ()=> reject(new Error('Could not read file.'));
+    r.readAsDataURL(file);
+  });
+}
+
+async function tryExtractPdfTextLayer(file){
+  try{
+    const buf = await file.arrayBuffer();
+    const pdf = await pdfjsLib.getDocument({ data: buf }).promise;
+    let fullText = '';
+    const pagesToCheck = Math.min(pdf.numPages, 10);
+    for(let i=1;i<=pagesToCheck;i++){
+      const page = await pdf.getPage(i);
+      const content = await page.getTextContent();
+      fullText += content.items.map(it=>it.str).join(' ') + '\n';
+    }
+    return fullText.trim();
+  }catch(e){
+    console.warn('PDF text layer check failed, will OCR instead:', e.message);
+    return '';
+  }
+}
+
+// Returns {sourceType:'text'|'ocr', text, ocrExitCode, ocrError}
+async function ingestFile(file){
+  const isPdf = file.type === 'application/pdf' || /\.pdf$/i.test(file.name);
+  if(isPdf){
+    const textLayer = await tryExtractPdfTextLayer(file);
+    // Heuristic: a real text-layer PDF has meaningful text per page. A scanned
+    // PDF with no OCR layer returns empty or near-empty content.items.
+    if(textLayer && textLayer.replace(/\s/g,'').length > 25){
+      return { sourceType:'text', text: textLayer, ocrExitCode:1, ocrError:null };
+    }
+    // Scanned PDF -> OCR.space handles PDF files directly via base64
+    const dataUrl = await fileToDataUrl(file);
+    const ocrRes = await callOCR(dataUrl);
+    return { sourceType:'ocr', text: ocrRes.text, ocrExitCode: ocrRes.exitCode, ocrError: ocrRes.ocrError };
+  } else {
+    // Plain image -> always OCR
+    const dataUrl = await fileToDataUrl(file);
+    const ocrRes = await callOCR(dataUrl);
+    return { sourceType:'ocr', text: ocrRes.text, ocrExitCode: ocrRes.exitCode, ocrError: ocrRes.ocrError };
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+//  STEP 3 — Student sheets: batch upload, extract, flag, misspelling review
+// ═══════════════════════════════════════════════════════════════════════════
+function renderStep3(){
+  const c = document.getElementById('stepContainer');
+  c.innerHTML = `
+    <div class="card">
+      <h2>3 · Student Answer Sheets</h2>
+      <div class="muted">Take a photo of each student's script, or upload PDFs. One file per student. Add them one at a time or select several at once.</div>
+      <div class="file-drop" id="s3-drop" style="margin-top:12px;">📷 Add student answer sheet(s)</div>
+      <input type="file" id="s3-file" accept="image/*,.pdf" capture="environment" multiple class="hidden">
+      <div id="s3-list" style="margin-top:14px;"></div>
+      <div style="display:flex;gap:10px;margin-top:16px;">
+        <button class="btn ghost" id="s3-back">← Back</button>
+        <button class="btn primary" id="s3-continue" style="flex:1;">Continue →</button>
+      </div>
+    </div>`;
+  drawSheetList();
+  document.getElementById('s3-back').addEventListener('click', ()=>goToStep(2));
+  document.getElementById('s3-continue').addEventListener('click', ()=>{
+    if(!state.sheets.length){ toast('Add at least one student sheet.','error'); return; }
+    const notReady = state.sheets.filter(s=>s.status!=='ready');
+    if(notReady.length){ toast(`${notReady.length} sheet(s) still need review before continuing.`,'error'); return; }
+    goToStep(4);
+  });
+  document.getElementById('s3-drop').addEventListener('click', ()=>document.getElementById('s3-file').click());
+  document.getElementById('s3-file').addEventListener('change', async (e)=>{
+    const files = Array.from(e.target.files||[]);
+    for(const file of files){
+      const sheet = { studentId:'', studentName:'', file, sourceType:null, rawText:'', cleanedText:'', changes:[], ocrExitCode:null, ocrError:null, marking:null, status:'new', remarkHistory:[] };
+      state.sheets.push(sheet);
+    }
+    e.target.value = '';
+    drawSheetList();
+    // process newly added ones sequentially
+    for(const sheet of state.sheets.filter(s=>s.status==='new')){
+      await processSheetExtraction(sheet);
+    }
+  });
+}
+
+function sheetBadge(sheet){
+  if(sheet.status==='new') return `<span class="badge muted">Queued</span>`;
+  if(sheet.status==='extracting') return `<span class="badge muted">Reading…</span>`;
+  if(sheet.status==='needs_review') return `<span class="badge warn">Needs Review</span>`;
+  if(sheet.status==='failed') return `<span class="badge danger">Failed</span>`;
+  if(sheet.status==='ready') return `<span class="badge ok">Ready</span>`;
+  return '';
+}
+
+function drawSheetList(){
+  const el = document.getElementById('s3-list');
+  if(!el) return;
+  el.innerHTML = state.sheets.map((s,i)=>`
+    <div class="sheet-item" data-i="${i}">
+      <div class="info">
+        <div class="name">${s.studentName ? esc(s.studentName) : '(assign student)'}</div>
+        <div class="meta">${esc(s.file.name)} · ${s.sourceType==='text'?'Text PDF':(s.sourceType==='ocr'?'OCR':'')}</div>
+      </div>
+      ${sheetBadge(s)}
+    </div>`).join('');
+  el.querySelectorAll('.sheet-item').forEach(item=>{
+    item.addEventListener('click', ()=> openSheetReview(+item.dataset.i));
+  });
+}
+
+async function processSheetExtraction(sheet){
+  sheet.status = 'extracting'; drawSheetList();
+  try{
+    const ing = await ingestFile(sheet.file);
+    sheet.sourceType = ing.sourceType;
+    sheet.rawText = ing.text;
+    sheet.ocrExitCode = ing.ocrExitCode;
+    sheet.ocrError = ing.ocrError;
+    if(!ing.text || ing.text.replace(/\s/g,'').length < 3){
+      sheet.status = 'failed'; drawSheetList(); return;
+    }
+    // Only run the misspelling/OCR-cleanup pass on OCR'd (handwritten) sheets —
+    // a text-layer PDF has no handwriting-legibility issue to check.
+    if(ing.sourceType === 'ocr'){
+      const { system, user } = PROMPTS.cleanupOCR({ subject: state.setup.subject, level: state.setup.level, rawText: ing.text });
+      const raw = await callAIText(system, user);
+      const parsed = parseAIJson(raw);
+      sheet.cleanedText = parsed.correctedText || ing.text;
+      sheet.changes = parsed.changes || [];
+    } else {
+      sheet.cleanedText = ing.text;
+      sheet.changes = [];
+    }
+    const lowConfidence = ing.exitCode && ing.exitCode !== 1;
+    sheet.status = (sheet.changes.length || lowConfidence || !sheet.studentId) ? 'needs_review' : 'ready';
+  }catch(err){
+    console.error(err);
+    sheet.status = 'failed';
+    sheet.ocrError = err.message;
+  }
+  drawSheetList();
+}
+
+function openSheetReview(i){
+  const sheet = state.sheets[i];
+  const studentOptions = state.students.map(st=>`<option value="${st.id}" ${sheet.studentId===st.id?'selected':''}>${esc(st.name)}</option>`).join('');
+  const changesHtml = (sheet.changes||[]).length ? `
+    <div class="muted" style="margin:10px 0 4px;">Possible OCR / spelling issues found — review each:</div>
+    ${sheet.changes.map((ch,ci)=>`
+      <div class="qa-row">
+        <span class="diff-old">${esc(ch.original)}</span> → <span class="diff-new">${esc(ch.suggested)}</span>
+        <div class="muted">${esc(ch.reason||'')}</div>
+      </div>`).join('')}
+    <div class="muted" style="margin-top:6px;">These corrections are already applied to the text below. Edit the text directly if any correction is wrong.</div>
+  ` : '';
+  openModal(`
+    <h3>Review Sheet</h3>
+    <label>Student</label>
+    <select id="rev-student">${'<option value="">Select…</option>'+studentOptions}</select>
+    ${sheet.status==='failed' ? `<div class="badge danger" style="margin-top:10px;">Could not read this file${sheet.ocrError?': '+esc(sheet.ocrError):''}</div>` : ''}
+    ${changesHtml}
+    <label style="margin-top:10px;">Confirmed answer text (edit anything the machine got wrong)</label>
+    <textarea id="rev-text" rows="8">${esc(sheet.cleanedText || sheet.rawText || '')}</textarea>
+    <div style="display:flex;gap:10px;margin-top:14px;">
+      <button class="btn danger small" id="rev-remove">Remove Sheet</button>
+      <button class="btn ghost small" id="rev-retake">Re-upload File</button>
+      <button class="btn primary" id="rev-confirm" style="flex:1;">✓ Mark as Ready</button>
+    </div>
+  `);
+  document.getElementById('rev-remove').addEventListener('click', ()=>{
+    state.sheets.splice(i,1); closeModal(); drawSheetList();
+  });
+  document.getElementById('rev-retake').addEventListener('click', ()=>{
+    closeModal();
+    const inp = document.createElement('input');
+    inp.type='file'; inp.accept='image/*,.pdf'; inp.setAttribute('capture','environment');
+    inp.addEventListener('change', async ()=>{
+      if(inp.files[0]){ sheet.file = inp.files[0]; await processSheetExtraction(sheet); }
+    });
+    inp.click();
+  });
+  document.getElementById('rev-confirm').addEventListener('click', ()=>{
+    const studentId = document.getElementById('rev-student').value;
+    if(!studentId){ toast('Select which student this sheet belongs to.','error'); return; }
+    const student = state.students.find(s=>s.id===studentId);
+    const text = document.getElementById('rev-text').value.trim();
+    if(!text){ toast('Answer text is empty.','error'); return; }
+    sheet.studentId = studentId;
+    sheet.studentName = student ? student.name : studentId;
+    sheet.cleanedText = text;
+    sheet.status = 'ready';
+    closeModal();
+    drawSheetList();
+  });
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+//  STEP 4 — Run AI marking across all ready sheets
+// ═══════════════════════════════════════════════════════════════════════════
+function renderStep4(){
+  const c = document.getElementById('stepContainer');
+  const unmarked = state.sheets.filter(s=>!s.marking);
+  c.innerHTML = `
+    <div class="card">
+      <h2>4 · AI Marking</h2>
+      <div class="muted">${state.sheets.length} student sheet(s) ready to mark against the confirmed answer key.</div>
+      <div id="s4-progress" style="margin-top:14px;"></div>
+      <div style="display:flex;gap:10px;margin-top:16px;">
+        <button class="btn ghost" id="s4-back">← Back</button>
+        <button class="btn primary" id="s4-run" style="flex:1;">${unmarked.length ? '▶ Run AI Marking' : 'Continue →'}</button>
+      </div>
+    </div>`;
+  document.getElementById('s4-back').addEventListener('click', ()=>goToStep(3));
+  document.getElementById('s4-run').addEventListener('click', async ()=>{
+    if(!unmarked.length){ goToStep(5); return; }
+    const btn = document.getElementById('s4-run');
+    btn.disabled = true;
+    const progEl = document.getElementById('s4-progress');
+    let done = 0;
+    for(const sheet of state.sheets){
+      if(sheet.marking) continue;
+      progEl.innerHTML = `<div class="loading-block"><span class="spinner"></span> Marking ${esc(sheet.studentName)}… (${done+1}/${state.sheets.length})</div>`;
+      try{
+        const { system, user } = PROMPTS.mark({
+          subject: state.setup.subject, testName: state.setup.testName, category: state.setup.category, level: state.setup.level,
+          keyQuestions: state.answerKey.questions, studentText: sheet.cleanedText
+        });
+        const raw = await callAIText(system, user);
+        sheet.marking = parseAIJson(raw);
+        sheet.marking.approved = false;
+      }catch(err){
+        console.error(err);
+        sheet.marking = { perQuestion:[], total:0, maxTotal: state.answerKey.questions.reduce((a,q)=>a+(q.marks||0),0), overallComment:'Marking failed: '+err.message, error:true, approved:false };
+      }
+      done++;
+    }
+    progEl.innerHTML = `<div class="badge ok">Marking complete</div>`;
+    setTimeout(()=>goToStep(5), 500);
+  });
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+//  STEP 5 — Review, approve, manually edit, or send back for AI remark
+// ═══════════════════════════════════════════════════════════════════════════
+function renderStep5(){
+  const c = document.getElementById('stepContainer');
+  const allApproved = state.sheets.every(s=>s.marking && s.marking.approved);
+  c.innerHTML = `
+    <div class="card">
+      <h2>5 · Review & Approve</h2>
+      <div class="muted">Tap a student to see the question-by-question breakdown, edit scores, or send back for AI remarking.</div>
+      <table class="score-table" style="margin-top:12px;">
+        <tr><th>Student</th><th>Score</th><th>Status</th></tr>
+        <tbody id="s5-rows"></tbody>
+      </table>
+      <div style="display:flex;gap:10px;margin-top:16px;">
+        <button class="btn ghost" id="s5-back">← Back</button>
+        <button class="btn primary" id="s5-continue" style="flex:1;" ${allApproved?'':'disabled'}>Save Results →</button>
+      </div>
+      ${!allApproved ? `<div class="muted" style="margin-top:8px;">All students must be approved before saving.</div>` : ''}
+    </div>`;
+  document.getElementById('s5-back').addEventListener('click', ()=>goToStep(4));
+  document.getElementById('s5-continue').addEventListener('click', ()=>{ if(allApproved) goToStep(6); });
+  drawReviewRows();
+}
+
+function drawReviewRows(){
+  const el = document.getElementById('s5-rows');
+  if(!el) return;
+  el.innerHTML = state.sheets.map((s,i)=>{
+    const m = s.marking || {};
+    const pct = m.maxTotal ? Math.round((m.total/m.maxTotal)*100) : 0;
+    const statusBadge = m.error ? `<span class="badge danger">Error</span>` : (m.approved ? `<span class="badge ok">Approved</span>` : `<span class="badge warn">Pending</span>`);
+    return `<tr data-i="${i}" style="cursor:pointer;">
+      <td>${esc(s.studentName)}</td>
+      <td>${m.total ?? 0}/${m.maxTotal ?? 0} (${pct}%)</td>
+      <td>${statusBadge}</td>
+    </tr>`;
+  }).join('');
+  el.querySelectorAll('tr').forEach(row=>{
+    row.addEventListener('click', ()=>openGradeReview(+row.dataset.i));
+  });
+}
+
+function openGradeReview(i){
+  const sheet = state.sheets[i];
+  const m = sheet.marking;
+  const rowsHtml = (m.perQuestion||[]).map((q,qi)=>`
+    <div class="qa-row">
+      <div class="qno">Q${esc(q.no)}</div>
+      <div class="row" style="align-items:center;">
+        <input type="number" class="score-input" data-qi="${qi}" value="${q.score}" step="0.5" min="0" max="${q.maxMarks}">
+        <div class="muted" style="flex:2;">/ ${q.maxMarks} — ${esc(q.rationale||'')}</div>
+      </div>
+    </div>`).join('');
+  openModal(`
+    <h3>${esc(sheet.studentName)}</h3>
+    <div class="muted">${esc(state.setup.subject)} · ${esc(state.setup.testName)}</div>
+    ${m.error ? `<div class="badge danger" style="margin:10px 0;">${esc(m.overallComment)}</div>` : ''}
+    <div id="gr-rows" style="margin-top:10px;">${rowsHtml}</div>
+    <div class="muted" style="margin-top:8px;font-style:italic;">${esc(m.overallComment||'')}</div>
+    <div style="display:flex;gap:10px;margin-top:16px;">
+      <button class="btn ghost small" id="gr-remark">↻ Send for AI Remark</button>
+      <button class="btn primary small" id="gr-approve" style="flex:1;">✓ Approve</button>
+    </div>
+    <button class="btn danger block" id="gr-retry" style="margin-top:8px;" ${m.error?'':'class=hidden'}>Retry Marking</button>
+  `);
+  document.getElementById('gr-rows').querySelectorAll('.score-input').forEach(inp=>{
+    inp.addEventListener('input', ()=>{
+      const qi = +inp.dataset.qi;
+      m.perQuestion[qi].score = parseFloat(inp.value)||0;
+      m.total = m.perQuestion.reduce((a,q)=>a+(parseFloat(q.score)||0),0);
+    });
+  });
+  document.getElementById('gr-approve').addEventListener('click', ()=>{
+    m.approved = true;
+    closeModal(); drawReviewRows();
+    toast('Approved.', 'ok');
+  });
+  const retryBtn = document.getElementById('gr-retry');
+  if(retryBtn) retryBtn.addEventListener('click', async ()=>{
+    sheet.marking = null;
+    closeModal();
+    goToStep(4);
+  });
+  document.getElementById('gr-remark').addEventListener('click', ()=>{
+    openModal(`
+      <h3>Send for AI Remark</h3>
+      <div class="muted">Tell the AI specifically what was wrong and what it should do instead. It will re-mark using your feedback.</div>
+      <textarea id="remark-feedback" rows="6" placeholder="e.g. Question 3 deserves full marks — the student's answer means the same thing as the model answer, just worded differently."></textarea>
+      <div style="display:flex;gap:10px;margin-top:14px;">
+        <button class="btn ghost" id="remark-cancel">Cancel</button>
+        <button class="btn primary" id="remark-send" style="flex:1;">Send for Remark</button>
+      </div>
+    `);
+    document.getElementById('remark-cancel').addEventListener('click', ()=>openGradeReview(i));
+    document.getElementById('remark-send').addEventListener('click', async ()=>{
+      const feedback = document.getElementById('remark-feedback').value.trim();
+      if(!feedback){ toast('Describe what was wrong.','error'); return; }
+      const btn = document.getElementById('remark-send');
+      btn.disabled = true; btn.innerHTML = '<span class="spinner"></span> Remarking…';
+      try{
+        const { system, user } = PROMPTS.remark({
+          subject: state.setup.subject, testName: state.setup.testName, category: state.setup.category, level: state.setup.level,
+          keyQuestions: state.answerKey.questions, studentText: sheet.cleanedText,
+          previousMarking: { perQuestion: m.perQuestion, total: m.total, maxTotal: m.maxTotal },
+          teacherFeedback: feedback
+        });
+        const raw = await callAIText(system, user);
+        const newMarking = parseAIJson(raw);
+        sheet.remarkHistory.push({ feedback, previous: m });
+        newMarking.approved = false;
+        sheet.marking = newMarking;
+        toast('Re-marked.', 'ok');
+        openGradeReview(i);
+      }catch(err){
+        console.error(err);
+        toast('Remark failed: '+err.message, 'error');
+        btn.disabled=false; btn.textContent='Send for Remark';
+      }
+    });
+  });
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+//  STEP 6 — Save to Firestore. Same path/shape your sync engine already
+//  writes to, so it appears in Results History and headteacher/admin
+//  dashboards immediately via their existing live listeners — no changes
+//  needed anywhere else in TeachMate.
+// ═══════════════════════════════════════════════════════════════════════════
+function renderStep6(){
+  const c = document.getElementById('stepContainer');
+  c.innerHTML = `
+    <div class="card">
+      <h2>6 · Save Results</h2>
+      <div class="muted">${state.sheets.length} student(s) · ${esc(state.setup.subject)} · ${esc(state.setup.testName)} · ${esc(state.setup.className)}</div>
+      <div id="s6-status" style="margin-top:14px;"></div>
+      <div style="display:flex;gap:10px;margin-top:16px;">
+        <button class="btn ghost" id="s6-back">← Back</button>
+        <button class="btn primary" id="s6-save" style="flex:1;">💾 Save to Results</button>
+      </div>
+    </div>`;
+  document.getElementById('s6-back').addEventListener('click', ()=>goToStep(5));
+  document.getElementById('s6-save').addEventListener('click', async ()=>{
+    const btn = document.getElementById('s6-save');
+    btn.disabled = true; btn.innerHTML = '<span class="spinner"></span> Saving…';
+    try{
+      const scores = {};
+      state.sheets.forEach(s=>{
+        const m = s.marking;
+        const pct = m.maxTotal ? Math.round((m.total/m.maxTotal)*10000)/100 : 0;
+        scores[s.studentId] = pct;
+      });
+      const resultsCol = collection(fdb, 'schools', state.profile.schoolId, 'results');
+      const newDocRef = doc(resultsCol);
+      const record = {
+        id: newDocRef.id,
+        classId: state.setup.classId,
+        subject: state.setup.subject,
+        testName: state.setup.testName,
+        category: state.setup.category,
+        level: state.setup.level,
+        date: state.setup.date,
+        scores,
+        createdAt: Date.now(),
+        updatedAt: Date.now(),
+        source: 'automark'
+      };
+      await setDoc(newDocRef, record);
+      document.getElementById('s6-status').innerHTML = `<div class="badge ok">Saved successfully</div>`;
+      toast('Results saved. Check Results History in TeachMate.', 'ok');
+      btn.textContent = '✓ Saved';
+      setTimeout(()=>{
+        // reset for a new marking session, keep class/subject/level as a convenience
+        state.answerKey = { sourceType:null, rawText:'', questions:[], confirmed:false };
+        state.sheets = [];
+        goToStep(1);
+      }, 1800);
+    }catch(err){
+      console.error(err);
+      document.getElementById('s6-status').innerHTML = `<div class="badge danger">Save failed: ${esc(err.message)}</div>`;
+      btn.disabled = false; btn.textContent = '💾 Save to Results';
+    }
+  });
+}
+</script>
+</body>
+</html>
+
+
+
