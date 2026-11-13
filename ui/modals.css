@@ -1,0 +1,386 @@
+/* TeachMate 3.0 — modals.css
+   The report-card forms (#individual-pdf-form, #bulk-pdf-form) are written by the engine with
+   Tailwind-style class names, but Tailwind is not loaded, so they rendered unstyled underneath the
+   full-page shell. This file gives them (1) a layer above every full page and (2) the styles for
+   exactly the utility classes they use, scoped so nothing else on the site changes. */
+#individual-pdf-form, #bulk-pdf-form {
+  position: fixed !important; inset: 0 !important; z-index: 9600 !important;
+  display: flex; align-items: flex-end; justify-content: center; padding: 0 !important;
+  background: rgba(7, 16, 12, .72) !important; backdrop-filter: blur(5px);
+  font-family: inherit;
+}
+:is(#individual-pdf-form,#bulk-pdf-form) > div {
+  width: 100%; max-width: 860px; max-height: 96dvh; background: #fff; color: #1c2a24;
+  border-radius: 26px 26px 0 0 !important; overflow: hidden !important; display: flex; flex-direction: column;
+  box-shadow: 0 -18px 60px rgba(0,0,0,.35); animation: tmSheetUp .22s ease-out;
+}
+#bulk-pdf-form > div { max-width: 560px; }
+@keyframes tmSheetUp { from { transform: translateY(40px); opacity: .4; } to { transform: none; opacity: 1; } }
+:is(#individual-pdf-form,#bulk-pdf-form) > div > .p-6 { overflow-y: auto; flex: 1 1 auto; -webkit-overflow-scrolling: touch; padding: 16px !important; }
+@media (min-width: 700px) {
+  #individual-pdf-form, #bulk-pdf-form { align-items: center; padding: 20px !important; }
+  :is(#individual-pdf-form,#bulk-pdf-form) > div { border-radius: 26px !important; box-shadow: 0 30px 90px rgba(0,0,0,.4); }
+  :is(#individual-pdf-form,#bulk-pdf-form) > div > .p-6 { padding: 22px !important; }
+}
+:is(#individual-pdf-form,#bulk-pdf-form) .p-0\.5{padding:2px}
+:is(#individual-pdf-form,#bulk-pdf-form) .px-0\.5{padding-left:2px;padding-right:2px}
+:is(#individual-pdf-form,#bulk-pdf-form) .py-0\.5{padding-top:2px;padding-bottom:2px}
+:is(#individual-pdf-form,#bulk-pdf-form) .gap-0\.5{gap:2px}
+:is(#individual-pdf-form,#bulk-pdf-form) .mb-0\.5{margin-bottom:2px}
+:is(#individual-pdf-form,#bulk-pdf-form) .mt-0\.5{margin-top:2px}
+:is(#individual-pdf-form,#bulk-pdf-form) .pb-0\.5{padding-bottom:2px}
+:is(#individual-pdf-form,#bulk-pdf-form) .p-1{padding:4px}
+:is(#individual-pdf-form,#bulk-pdf-form) .px-1{padding-left:4px;padding-right:4px}
+:is(#individual-pdf-form,#bulk-pdf-form) .py-1{padding-top:4px;padding-bottom:4px}
+:is(#individual-pdf-form,#bulk-pdf-form) .gap-1{gap:4px}
+:is(#individual-pdf-form,#bulk-pdf-form) .mb-1{margin-bottom:4px}
+:is(#individual-pdf-form,#bulk-pdf-form) .mt-1{margin-top:4px}
+:is(#individual-pdf-form,#bulk-pdf-form) .pb-1{padding-bottom:4px}
+:is(#individual-pdf-form,#bulk-pdf-form) .p-1\.5{padding:6px}
+:is(#individual-pdf-form,#bulk-pdf-form) .px-1\.5{padding-left:6px;padding-right:6px}
+:is(#individual-pdf-form,#bulk-pdf-form) .py-1\.5{padding-top:6px;padding-bottom:6px}
+:is(#individual-pdf-form,#bulk-pdf-form) .gap-1\.5{gap:6px}
+:is(#individual-pdf-form,#bulk-pdf-form) .mb-1\.5{margin-bottom:6px}
+:is(#individual-pdf-form,#bulk-pdf-form) .mt-1\.5{margin-top:6px}
+:is(#individual-pdf-form,#bulk-pdf-form) .pb-1\.5{padding-bottom:6px}
+:is(#individual-pdf-form,#bulk-pdf-form) .p-2{padding:8px}
+:is(#individual-pdf-form,#bulk-pdf-form) .px-2{padding-left:8px;padding-right:8px}
+:is(#individual-pdf-form,#bulk-pdf-form) .py-2{padding-top:8px;padding-bottom:8px}
+:is(#individual-pdf-form,#bulk-pdf-form) .gap-2{gap:8px}
+:is(#individual-pdf-form,#bulk-pdf-form) .mb-2{margin-bottom:8px}
+:is(#individual-pdf-form,#bulk-pdf-form) .mt-2{margin-top:8px}
+:is(#individual-pdf-form,#bulk-pdf-form) .pb-2{padding-bottom:8px}
+:is(#individual-pdf-form,#bulk-pdf-form) .p-2\.5{padding:10px}
+:is(#individual-pdf-form,#bulk-pdf-form) .px-2\.5{padding-left:10px;padding-right:10px}
+:is(#individual-pdf-form,#bulk-pdf-form) .py-2\.5{padding-top:10px;padding-bottom:10px}
+:is(#individual-pdf-form,#bulk-pdf-form) .gap-2\.5{gap:10px}
+:is(#individual-pdf-form,#bulk-pdf-form) .mb-2\.5{margin-bottom:10px}
+:is(#individual-pdf-form,#bulk-pdf-form) .mt-2\.5{margin-top:10px}
+:is(#individual-pdf-form,#bulk-pdf-form) .pb-2\.5{padding-bottom:10px}
+:is(#individual-pdf-form,#bulk-pdf-form) .p-3{padding:12px}
+:is(#individual-pdf-form,#bulk-pdf-form) .px-3{padding-left:12px;padding-right:12px}
+:is(#individual-pdf-form,#bulk-pdf-form) .py-3{padding-top:12px;padding-bottom:12px}
+:is(#individual-pdf-form,#bulk-pdf-form) .gap-3{gap:12px}
+:is(#individual-pdf-form,#bulk-pdf-form) .mb-3{margin-bottom:12px}
+:is(#individual-pdf-form,#bulk-pdf-form) .mt-3{margin-top:12px}
+:is(#individual-pdf-form,#bulk-pdf-form) .pb-3{padding-bottom:12px}
+:is(#individual-pdf-form,#bulk-pdf-form) .p-4{padding:16px}
+:is(#individual-pdf-form,#bulk-pdf-form) .px-4{padding-left:16px;padding-right:16px}
+:is(#individual-pdf-form,#bulk-pdf-form) .py-4{padding-top:16px;padding-bottom:16px}
+:is(#individual-pdf-form,#bulk-pdf-form) .gap-4{gap:16px}
+:is(#individual-pdf-form,#bulk-pdf-form) .mb-4{margin-bottom:16px}
+:is(#individual-pdf-form,#bulk-pdf-form) .mt-4{margin-top:16px}
+:is(#individual-pdf-form,#bulk-pdf-form) .pb-4{padding-bottom:16px}
+:is(#individual-pdf-form,#bulk-pdf-form) .p-5{padding:20px}
+:is(#individual-pdf-form,#bulk-pdf-form) .px-5{padding-left:20px;padding-right:20px}
+:is(#individual-pdf-form,#bulk-pdf-form) .py-5{padding-top:20px;padding-bottom:20px}
+:is(#individual-pdf-form,#bulk-pdf-form) .gap-5{gap:20px}
+:is(#individual-pdf-form,#bulk-pdf-form) .mb-5{margin-bottom:20px}
+:is(#individual-pdf-form,#bulk-pdf-form) .mt-5{margin-top:20px}
+:is(#individual-pdf-form,#bulk-pdf-form) .pb-5{padding-bottom:20px}
+:is(#individual-pdf-form,#bulk-pdf-form) .p-6{padding:24px}
+:is(#individual-pdf-form,#bulk-pdf-form) .px-6{padding-left:24px;padding-right:24px}
+:is(#individual-pdf-form,#bulk-pdf-form) .py-6{padding-top:24px;padding-bottom:24px}
+:is(#individual-pdf-form,#bulk-pdf-form) .gap-6{gap:24px}
+:is(#individual-pdf-form,#bulk-pdf-form) .mb-6{margin-bottom:24px}
+:is(#individual-pdf-form,#bulk-pdf-form) .mt-6{margin-top:24px}
+:is(#individual-pdf-form,#bulk-pdf-form) .pb-6{padding-bottom:24px}
+:is(#individual-pdf-form,#bulk-pdf-form) .space-y-3{}
+:is(#individual-pdf-form,#bulk-pdf-form) .space-y-5{}
+:is(#individual-pdf-form,#bulk-pdf-form) .space-y-6{}
+:is(#individual-pdf-form,#bulk-pdf-form) .space-y-3>*+*{margin-top:12px}
+:is(#individual-pdf-form,#bulk-pdf-form) .space-y-5>*+*{margin-top:20px}
+:is(#individual-pdf-form,#bulk-pdf-form) .space-y-6>*+*{margin-top:24px}
+:is(#individual-pdf-form,#bulk-pdf-form) .flex{display:flex}
+:is(#individual-pdf-form,#bulk-pdf-form) .grid{display:grid}
+:is(#individual-pdf-form,#bulk-pdf-form) .block{display:block}
+:is(#individual-pdf-form,#bulk-pdf-form) .flex-col{flex-direction:column}
+:is(#individual-pdf-form,#bulk-pdf-form) .flex-wrap{flex-wrap:wrap}
+:is(#individual-pdf-form,#bulk-pdf-form) .flex-1{flex:1 1 0%}
+:is(#individual-pdf-form,#bulk-pdf-form) .flex-shrink-0{flex-shrink:0}
+:is(#individual-pdf-form,#bulk-pdf-form) .items-center{align-items:center}
+:is(#individual-pdf-form,#bulk-pdf-form) .items-start{align-items:flex-start}
+:is(#individual-pdf-form,#bulk-pdf-form) .justify-between{justify-content:space-between}
+:is(#individual-pdf-form,#bulk-pdf-form) .justify-center{justify-content:center}
+:is(#individual-pdf-form,#bulk-pdf-form) .justify-end{justify-content:flex-end}
+:is(#individual-pdf-form,#bulk-pdf-form) .w-full{width:100%}
+:is(#individual-pdf-form,#bulk-pdf-form) .w-20{width:80px}
+:is(#individual-pdf-form,#bulk-pdf-form) .h-20{height:80px}
+:is(#individual-pdf-form,#bulk-pdf-form) .text-center{text-align:center}
+:is(#individual-pdf-form,#bulk-pdf-form) .italic{font-style:italic}
+:is(#individual-pdf-form,#bulk-pdf-form) .cursor-pointer{cursor:pointer}
+:is(#individual-pdf-form,#bulk-pdf-form) .select-none{user-select:none}
+:is(#individual-pdf-form,#bulk-pdf-form) .overflow-hidden{overflow:hidden}
+:is(#individual-pdf-form,#bulk-pdf-form) .overflow-y-auto{overflow-y:auto}
+:is(#individual-pdf-form,#bulk-pdf-form) .font-bold{font-weight:800}
+:is(#individual-pdf-form,#bulk-pdf-form) .font-semibold{font-weight:700}
+:is(#individual-pdf-form,#bulk-pdf-form) .font-normal{font-weight:500}
+:is(#individual-pdf-form,#bulk-pdf-form) .text-xs{font-size:.74rem}
+:is(#individual-pdf-form,#bulk-pdf-form) .text-sm{font-size:.86rem}
+:is(#individual-pdf-form,#bulk-pdf-form) .text-md{font-size:1rem}
+:is(#individual-pdf-form,#bulk-pdf-form) .text-xl{font-size:1.2rem}
+:is(#individual-pdf-form,#bulk-pdf-form) .text-3xl{font-size:1.9rem;line-height:1}
+:is(#individual-pdf-form,#bulk-pdf-form) .leading-tight{line-height:1.25}
+:is(#individual-pdf-form,#bulk-pdf-form) .leading-relaxed{line-height:1.6}
+:is(#individual-pdf-form,#bulk-pdf-form) .tracking-wide{letter-spacing:.01em}
+:is(#individual-pdf-form,#bulk-pdf-form) .rounded{border-radius:10px}
+:is(#individual-pdf-form,#bulk-pdf-form) .rounded-lg{border-radius:16px}
+:is(#individual-pdf-form,#bulk-pdf-form) .rounded-xl{border-radius:22px}
+:is(#individual-pdf-form,#bulk-pdf-form) .rounded-full{border-radius:999px}
+:is(#individual-pdf-form,#bulk-pdf-form) .rounded-t-xl{border-radius:22px 22px 0 0}
+:is(#individual-pdf-form,#bulk-pdf-form) .rounded-b-xl{border-radius:0 0 22px 22px}
+:is(#individual-pdf-form,#bulk-pdf-form) .border{border:1px solid #e2e8f0}
+:is(#individual-pdf-form,#bulk-pdf-form) .border-2{border-width:2px;border-style:solid}
+:is(#individual-pdf-form,#bulk-pdf-form) .border-b{border-bottom:1px solid #e2e8f0}
+:is(#individual-pdf-form,#bulk-pdf-form) .border-t{border-top:1px solid #e2e8f0}
+:is(#individual-pdf-form,#bulk-pdf-form) .border-dashed{border-style:dashed}
+:is(#individual-pdf-form,#bulk-pdf-form) .outline-none{outline:none}
+:is(#individual-pdf-form,#bulk-pdf-form) .max-w-4xl{max-width:860px}
+:is(#individual-pdf-form,#bulk-pdf-form) .max-w-lg{max-width:520px}
+:is(#individual-pdf-form,#bulk-pdf-form) .max-h-\[95vh\]{max-height:96vh;max-height:96dvh}
+:is(#individual-pdf-form,#bulk-pdf-form) .max-h-\[30vh\]{max-height:none}
+:is(#individual-pdf-form,#bulk-pdf-form) .grid-cols-1{grid-template-columns:1fr}
+:is(#individual-pdf-form,#bulk-pdf-form) .grid-cols-2{grid-template-columns:1fr 1fr}
+:is(#individual-pdf-form,#bulk-pdf-form) .bg-white{background:#fff}
+:is(#individual-pdf-form,#bulk-pdf-form) .text-white{color:#fff}
+:is(#individual-pdf-form,#bulk-pdf-form) .border-white{border-color:#fff}
+:is(#individual-pdf-form,#bulk-pdf-form) .bg-slate-50{background:#f6faf8}
+:is(#individual-pdf-form,#bulk-pdf-form) .text-slate-50{color:#f6faf8}
+:is(#individual-pdf-form,#bulk-pdf-form) .border-slate-50{border-color:#f6faf8}
+:is(#individual-pdf-form,#bulk-pdf-form) .bg-slate-100{background:#eef4f1}
+:is(#individual-pdf-form,#bulk-pdf-form) .text-slate-100{color:#eef4f1}
+:is(#individual-pdf-form,#bulk-pdf-form) .border-slate-100{border-color:#eef4f1}
+:is(#individual-pdf-form,#bulk-pdf-form) .bg-slate-200{background:#e1ebe6}
+:is(#individual-pdf-form,#bulk-pdf-form) .text-slate-200{color:#e1ebe6}
+:is(#individual-pdf-form,#bulk-pdf-form) .border-slate-200{border-color:#e1ebe6}
+:is(#individual-pdf-form,#bulk-pdf-form) .bg-slate-300{background:#cfdcd5}
+:is(#individual-pdf-form,#bulk-pdf-form) .text-slate-300{color:#cfdcd5}
+:is(#individual-pdf-form,#bulk-pdf-form) .border-slate-300{border-color:#cfdcd5}
+:is(#individual-pdf-form,#bulk-pdf-form) .bg-slate-400{background:#8da398}
+:is(#individual-pdf-form,#bulk-pdf-form) .text-slate-400{color:#8da398}
+:is(#individual-pdf-form,#bulk-pdf-form) .border-slate-400{border-color:#8da398}
+:is(#individual-pdf-form,#bulk-pdf-form) .bg-slate-500{background:#64786f}
+:is(#individual-pdf-form,#bulk-pdf-form) .text-slate-500{color:#64786f}
+:is(#individual-pdf-form,#bulk-pdf-form) .border-slate-500{border-color:#64786f}
+:is(#individual-pdf-form,#bulk-pdf-form) .bg-slate-600{background:#4c5f57}
+:is(#individual-pdf-form,#bulk-pdf-form) .text-slate-600{color:#4c5f57}
+:is(#individual-pdf-form,#bulk-pdf-form) .border-slate-600{border-color:#4c5f57}
+:is(#individual-pdf-form,#bulk-pdf-form) .bg-slate-700{background:#33443d}
+:is(#individual-pdf-form,#bulk-pdf-form) .text-slate-700{color:#33443d}
+:is(#individual-pdf-form,#bulk-pdf-form) .border-slate-700{border-color:#33443d}
+:is(#individual-pdf-form,#bulk-pdf-form) .bg-slate-800{background:#1c2a24}
+:is(#individual-pdf-form,#bulk-pdf-form) .text-slate-800{color:#1c2a24}
+:is(#individual-pdf-form,#bulk-pdf-form) .border-slate-800{border-color:#1c2a24}
+:is(#individual-pdf-form,#bulk-pdf-form) .bg-amber-50{background:#fff7e6}
+:is(#individual-pdf-form,#bulk-pdf-form) .text-amber-50{color:#fff7e6}
+:is(#individual-pdf-form,#bulk-pdf-form) .border-amber-50{border-color:#fff7e6}
+:is(#individual-pdf-form,#bulk-pdf-form) .bg-amber-100{background:#ffefc7}
+:is(#individual-pdf-form,#bulk-pdf-form) .text-amber-100{color:#ffefc7}
+:is(#individual-pdf-form,#bulk-pdf-form) .border-amber-100{border-color:#ffefc7}
+:is(#individual-pdf-form,#bulk-pdf-form) .bg-amber-200{background:#f7dd9c}
+:is(#individual-pdf-form,#bulk-pdf-form) .text-amber-200{color:#f7dd9c}
+:is(#individual-pdf-form,#bulk-pdf-form) .border-amber-200{border-color:#f7dd9c}
+:is(#individual-pdf-form,#bulk-pdf-form) .bg-amber-500{background:#f0a312}
+:is(#individual-pdf-form,#bulk-pdf-form) .text-amber-500{color:#f0a312}
+:is(#individual-pdf-form,#bulk-pdf-form) .border-amber-500{border-color:#f0a312}
+:is(#individual-pdf-form,#bulk-pdf-form) .bg-amber-600{background:#c9860a}
+:is(#individual-pdf-form,#bulk-pdf-form) .text-amber-600{color:#c9860a}
+:is(#individual-pdf-form,#bulk-pdf-form) .border-amber-600{border-color:#c9860a}
+:is(#individual-pdf-form,#bulk-pdf-form) .bg-amber-700{background:#a96f06}
+:is(#individual-pdf-form,#bulk-pdf-form) .text-amber-700{color:#a96f06}
+:is(#individual-pdf-form,#bulk-pdf-form) .border-amber-700{border-color:#a96f06}
+:is(#individual-pdf-form,#bulk-pdf-form) .bg-amber-800{background:#8a5a05}
+:is(#individual-pdf-form,#bulk-pdf-form) .text-amber-800{color:#8a5a05}
+:is(#individual-pdf-form,#bulk-pdf-form) .border-amber-800{border-color:#8a5a05}
+:is(#individual-pdf-form,#bulk-pdf-form) .bg-amber-900{background:#6e4604}
+:is(#individual-pdf-form,#bulk-pdf-form) .text-amber-900{color:#6e4604}
+:is(#individual-pdf-form,#bulk-pdf-form) .border-amber-900{border-color:#6e4604}
+:is(#individual-pdf-form,#bulk-pdf-form) .bg-blue-50{background:#eaf8f2}
+:is(#individual-pdf-form,#bulk-pdf-form) .text-blue-50{color:#eaf8f2}
+:is(#individual-pdf-form,#bulk-pdf-form) .border-blue-50{border-color:#eaf8f2}
+:is(#individual-pdf-form,#bulk-pdf-form) .bg-blue-100{background:#bff0da}
+:is(#individual-pdf-form,#bulk-pdf-form) .text-blue-100{color:#bff0da}
+:is(#individual-pdf-form,#bulk-pdf-form) .border-blue-100{border-color:#bff0da}
+:is(#individual-pdf-form,#bulk-pdf-form) .bg-blue-200{background:#9fe3c6}
+:is(#individual-pdf-form,#bulk-pdf-form) .text-blue-200{color:#9fe3c6}
+:is(#individual-pdf-form,#bulk-pdf-form) .border-blue-200{border-color:#9fe3c6}
+:is(#individual-pdf-form,#bulk-pdf-form) .bg-blue-600{background:#00b377}
+:is(#individual-pdf-form,#bulk-pdf-form) .text-blue-600{color:#00b377}
+:is(#individual-pdf-form,#bulk-pdf-form) .border-blue-600{border-color:#00b377}
+:is(#individual-pdf-form,#bulk-pdf-form) .bg-blue-700{background:#0e2a21}
+:is(#individual-pdf-form,#bulk-pdf-form) .text-blue-700{color:#0e2a21}
+:is(#individual-pdf-form,#bulk-pdf-form) .border-blue-700{border-color:#0e2a21}
+:is(#individual-pdf-form,#bulk-pdf-form) .bg-blue-800{background:#1d4a3a}
+:is(#individual-pdf-form,#bulk-pdf-form) .text-blue-800{color:#1d4a3a}
+:is(#individual-pdf-form,#bulk-pdf-form) .border-blue-800{border-color:#1d4a3a}
+:is(#individual-pdf-form,#bulk-pdf-form) .bg-blue-900{background:#0e2a21}
+:is(#individual-pdf-form,#bulk-pdf-form) .text-blue-900{color:#0e2a21}
+:is(#individual-pdf-form,#bulk-pdf-form) .border-blue-900{border-color:#0e2a21}
+:is(#individual-pdf-form,#bulk-pdf-form) .bg-emerald-100{background:#dcf6e8}
+:is(#individual-pdf-form,#bulk-pdf-form) .text-emerald-100{color:#dcf6e8}
+:is(#individual-pdf-form,#bulk-pdf-form) .border-emerald-100{border-color:#dcf6e8}
+:is(#individual-pdf-form,#bulk-pdf-form) .bg-emerald-200{background:#b9ebd1}
+:is(#individual-pdf-form,#bulk-pdf-form) .text-emerald-200{color:#b9ebd1}
+:is(#individual-pdf-form,#bulk-pdf-form) .border-emerald-200{border-color:#b9ebd1}
+:is(#individual-pdf-form,#bulk-pdf-form) .bg-emerald-600{background:#00b377}
+:is(#individual-pdf-form,#bulk-pdf-form) .text-emerald-600{color:#00b377}
+:is(#individual-pdf-form,#bulk-pdf-form) .border-emerald-600{border-color:#00b377}
+:is(#individual-pdf-form,#bulk-pdf-form) .bg-emerald-700{background:#0a7a4a}
+:is(#individual-pdf-form,#bulk-pdf-form) .text-emerald-700{color:#0a7a4a}
+:is(#individual-pdf-form,#bulk-pdf-form) .border-emerald-700{border-color:#0a7a4a}
+:is(#individual-pdf-form,#bulk-pdf-form) .bg-red-50{background:#fdecec}
+:is(#individual-pdf-form,#bulk-pdf-form) .text-red-50{color:#fdecec}
+:is(#individual-pdf-form,#bulk-pdf-form) .border-red-50{border-color:#fdecec}
+:is(#individual-pdf-form,#bulk-pdf-form) .bg-red-100{background:#f9d3d4}
+:is(#individual-pdf-form,#bulk-pdf-form) .text-red-100{color:#f9d3d4}
+:is(#individual-pdf-form,#bulk-pdf-form) .border-red-100{border-color:#f9d3d4}
+:is(#individual-pdf-form,#bulk-pdf-form) .bg-red-500{background:#e5484d}
+:is(#individual-pdf-form,#bulk-pdf-form) .text-red-500{color:#e5484d}
+:is(#individual-pdf-form,#bulk-pdf-form) .border-red-500{border-color:#e5484d}
+:is(#individual-pdf-form,#bulk-pdf-form) .bg-red-700{background:#b4232a}
+:is(#individual-pdf-form,#bulk-pdf-form) .text-red-700{color:#b4232a}
+:is(#individual-pdf-form,#bulk-pdf-form) .border-red-700{border-color:#b4232a}
+:is(#individual-pdf-form,#bulk-pdf-form) .bg-indigo-100{background:#e9e3ff}
+:is(#individual-pdf-form,#bulk-pdf-form) .text-indigo-100{color:#e9e3ff}
+:is(#individual-pdf-form,#bulk-pdf-form) .border-indigo-100{border-color:#e9e3ff}
+:is(#individual-pdf-form,#bulk-pdf-form) .bg-indigo-200{background:#d3c8ff}
+:is(#individual-pdf-form,#bulk-pdf-form) .text-indigo-200{color:#d3c8ff}
+:is(#individual-pdf-form,#bulk-pdf-form) .border-indigo-200{border-color:#d3c8ff}
+:is(#individual-pdf-form,#bulk-pdf-form) .bg-indigo-700{background:#5b3fd1}
+:is(#individual-pdf-form,#bulk-pdf-form) .text-indigo-700{color:#5b3fd1}
+:is(#individual-pdf-form,#bulk-pdf-form) .border-indigo-700{border-color:#5b3fd1}
+:is(#individual-pdf-form,#bulk-pdf-form) .hover\:bg-white:hover{background:#fff}
+:is(#individual-pdf-form,#bulk-pdf-form) .hover\:bg-slate-50:hover{background:#f6faf8}
+:is(#individual-pdf-form,#bulk-pdf-form) .hover\:bg-slate-100:hover{background:#eef4f1}
+:is(#individual-pdf-form,#bulk-pdf-form) .hover\:bg-slate-200:hover{background:#e1ebe6}
+:is(#individual-pdf-form,#bulk-pdf-form) .hover\:bg-slate-300:hover{background:#cfdcd5}
+:is(#individual-pdf-form,#bulk-pdf-form) .hover\:bg-slate-400:hover{background:#8da398}
+:is(#individual-pdf-form,#bulk-pdf-form) .hover\:bg-slate-500:hover{background:#64786f}
+:is(#individual-pdf-form,#bulk-pdf-form) .hover\:bg-slate-600:hover{background:#4c5f57}
+:is(#individual-pdf-form,#bulk-pdf-form) .hover\:bg-slate-700:hover{background:#33443d}
+:is(#individual-pdf-form,#bulk-pdf-form) .hover\:bg-slate-800:hover{background:#1c2a24}
+:is(#individual-pdf-form,#bulk-pdf-form) .hover\:bg-amber-50:hover{background:#fff7e6}
+:is(#individual-pdf-form,#bulk-pdf-form) .hover\:bg-amber-100:hover{background:#ffefc7}
+:is(#individual-pdf-form,#bulk-pdf-form) .hover\:bg-amber-200:hover{background:#f7dd9c}
+:is(#individual-pdf-form,#bulk-pdf-form) .hover\:bg-amber-500:hover{background:#f0a312}
+:is(#individual-pdf-form,#bulk-pdf-form) .hover\:bg-amber-600:hover{background:#c9860a}
+:is(#individual-pdf-form,#bulk-pdf-form) .hover\:bg-amber-700:hover{background:#a96f06}
+:is(#individual-pdf-form,#bulk-pdf-form) .hover\:bg-amber-800:hover{background:#8a5a05}
+:is(#individual-pdf-form,#bulk-pdf-form) .hover\:bg-amber-900:hover{background:#6e4604}
+:is(#individual-pdf-form,#bulk-pdf-form) .hover\:bg-blue-50:hover{background:#eaf8f2}
+:is(#individual-pdf-form,#bulk-pdf-form) .hover\:bg-blue-100:hover{background:#bff0da}
+:is(#individual-pdf-form,#bulk-pdf-form) .hover\:bg-blue-200:hover{background:#9fe3c6}
+:is(#individual-pdf-form,#bulk-pdf-form) .hover\:bg-blue-600:hover{background:#00b377}
+:is(#individual-pdf-form,#bulk-pdf-form) .hover\:bg-blue-700:hover{background:#0e2a21}
+:is(#individual-pdf-form,#bulk-pdf-form) .hover\:bg-blue-800:hover{background:#1d4a3a}
+:is(#individual-pdf-form,#bulk-pdf-form) .hover\:bg-blue-900:hover{background:#0e2a21}
+:is(#individual-pdf-form,#bulk-pdf-form) .hover\:bg-emerald-100:hover{background:#dcf6e8}
+:is(#individual-pdf-form,#bulk-pdf-form) .hover\:bg-emerald-200:hover{background:#b9ebd1}
+:is(#individual-pdf-form,#bulk-pdf-form) .hover\:bg-emerald-600:hover{background:#00b377}
+:is(#individual-pdf-form,#bulk-pdf-form) .hover\:bg-emerald-700:hover{background:#0a7a4a}
+:is(#individual-pdf-form,#bulk-pdf-form) .hover\:bg-red-50:hover{background:#fdecec}
+:is(#individual-pdf-form,#bulk-pdf-form) .hover\:bg-red-100:hover{background:#f9d3d4}
+:is(#individual-pdf-form,#bulk-pdf-form) .hover\:bg-red-500:hover{background:#e5484d}
+:is(#individual-pdf-form,#bulk-pdf-form) .hover\:bg-red-700:hover{background:#b4232a}
+:is(#individual-pdf-form,#bulk-pdf-form) .hover\:bg-indigo-100:hover{background:#e9e3ff}
+:is(#individual-pdf-form,#bulk-pdf-form) .hover\:bg-indigo-200:hover{background:#d3c8ff}
+:is(#individual-pdf-form,#bulk-pdf-form) .hover\:bg-indigo-700:hover{background:#5b3fd1}
+:is(#individual-pdf-form,#bulk-pdf-form) .sm\:flex-row{}
+:is(#individual-pdf-form,#bulk-pdf-form) .md\:col-span-1,:is(#individual-pdf-form,#bulk-pdf-form) .md\:col-span-2,:is(#individual-pdf-form,#bulk-pdf-form) .md\:col-span-3{grid-column:auto}
+@media(min-width:640px){
+:is(#individual-pdf-form,#bulk-pdf-form) .sm\:flex-row{flex-direction:row}
+:is(#individual-pdf-form,#bulk-pdf-form) .sm\:items-center{align-items:center}
+:is(#individual-pdf-form,#bulk-pdf-form) .sm\:mt-0{margin-top:0}
+}
+@media(min-width:768px){
+:is(#individual-pdf-form,#bulk-pdf-form) .md\:grid-cols-2{grid-template-columns:1fr 1fr}
+:is(#individual-pdf-form,#bulk-pdf-form) .md\:grid-cols-12{grid-template-columns:repeat(12,1fr)}
+:is(#individual-pdf-form,#bulk-pdf-form) .md\:col-span-1{grid-column:span 1}
+:is(#individual-pdf-form,#bulk-pdf-form) .md\:col-span-2{grid-column:span 2}
+:is(#individual-pdf-form,#bulk-pdf-form) .md\:col-span-3{grid-column:span 3}
+}
+
+/* ── header & footer ── */
+:is(#individual-pdf-form,#bulk-pdf-form) > div > .bg-blue-700 {
+  background: linear-gradient(135deg, #0b1f18, #12372a) !important; border-radius: 0 !important; box-shadow: none;
+  padding: 18px 18px 16px !important; flex: none;
+}
+:is(#individual-pdf-form,#bulk-pdf-form) > div > .bg-blue-700 h3 { margin: 0; font-size: 1.12rem; color: #fff; }
+:is(#individual-pdf-form,#bulk-pdf-form) > div > .bg-blue-700 p { margin: 6px 0 0; color: #9be9c8 !important; font-size: .8rem; }
+:is(#individual-pdf-form,#bulk-pdf-form) > div > .bg-blue-700 p span { background: rgba(255,255,255,.12) !important; color: #fff !important; border-radius: 8px; padding: 2px 8px; }
+:is(#individual-pdf-form,#bulk-pdf-form) > div > .bg-blue-700 button { flex: none; width: 40px; height: 40px; border-radius: 50%; border: 0; background: rgba(255,255,255,.12); color: #fff; font-size: 1.5rem; line-height: 1; padding: 0; margin: 0; cursor: pointer; }
+:is(#individual-pdf-form,#bulk-pdf-form) > div > .bg-slate-100 {
+  flex: none; border-radius: 0 !important; padding: 12px 16px calc(12px + env(safe-area-inset-bottom, 0px)) !important;
+  background: #fff !important; border-top: 1px solid #e1ebe6 !important; gap: 10px !important;
+}
+:is(#individual-pdf-form,#bulk-pdf-form) > div > .bg-slate-100 button { flex: 1; height: 50px; border-radius: 16px; font-size: .95rem; cursor: pointer; width: auto; margin: 0; padding: 0 16px !important; }
+:is(#individual-pdf-form,#bulk-pdf-form) > div > .bg-slate-100 button:first-child { background: #eef4f1 !important; border: 0 !important; color: #1c2a24 !important; box-shadow: none; }
+:is(#individual-pdf-form,#bulk-pdf-form) > div > .bg-slate-100 button:last-child { flex: 2; background: linear-gradient(135deg, #00cc88, #00a870) !important; color: #fff !important; border: 0 !important; box-shadow: 0 8px 20px rgba(0,179,119,.3); }
+
+/* ── sections & fields ── */
+:is(#individual-pdf-form,#bulk-pdf-form) .rounded-lg.shadow-sm, :is(#individual-pdf-form,#bulk-pdf-form) .bg-slate-50.rounded-lg { box-shadow: none !important; }
+:is(#individual-pdf-form,#bulk-pdf-form) h4 { margin: 0 0 12px; font-size: .98rem; font-weight: 800; }
+:is(#individual-pdf-form,#bulk-pdf-form) .border-b h4 { margin: 0; }
+:is(#individual-pdf-form,#bulk-pdf-form) .border-b { padding-bottom: 10px; margin-bottom: 12px; }
+:is(#individual-pdf-form,#bulk-pdf-form) p { margin: 0; }
+:is(#individual-pdf-form,#bulk-pdf-form) label.block { margin-bottom: 6px; font-size: .72rem; letter-spacing: .05em; text-transform: uppercase; color: #64786f; }
+:is(#individual-pdf-form,#bulk-pdf-form) input[type=text], :is(#individual-pdf-form,#bulk-pdf-form) input[type=number], :is(#individual-pdf-form,#bulk-pdf-form) input[type=date],
+:is(#individual-pdf-form,#bulk-pdf-form) select, :is(#individual-pdf-form,#bulk-pdf-form) textarea {
+  width: 100%; min-height: 46px; padding: 0 14px !important; border-radius: 14px !important; border: 1.5px solid #e1ebe6 !important;
+  background: #fff !important; color: #1c2a24 !important; font-size: 16px; font-family: inherit; box-shadow: none !important; margin: 0; box-sizing: border-box;
+}
+:is(#individual-pdf-form,#bulk-pdf-form) textarea { padding: 12px 14px !important; resize: vertical; line-height: 1.5; }
+:is(#individual-pdf-form,#bulk-pdf-form) input:focus, :is(#individual-pdf-form,#bulk-pdf-form) select:focus, :is(#individual-pdf-form,#bulk-pdf-form) textarea:focus { border-color: #00b377 !important; box-shadow: 0 0 0 3px rgba(0,179,119,.15) !important; }
+:is(#individual-pdf-form,#bulk-pdf-form) input[readonly] { background: #eef4f1 !important; color: #64786f !important; }
+:is(#individual-pdf-form,#bulk-pdf-form) .text-xs.text-slate-500 { margin-top: 5px; }
+:is(#individual-pdf-form,#bulk-pdf-form) button { font-family: inherit; }
+:is(#individual-pdf-form,#bulk-pdf-form) .px-3.py-1\.5, :is(#individual-pdf-form,#bulk-pdf-form) #add-subject-btn { border: 0; border-radius: 12px; cursor: pointer; color: #fff; height: 38px; padding: 0 14px; font-size: .8rem; margin: 0; width: auto; }
+:is(#individual-pdf-form,#bulk-pdf-form) #add-subject-btn { height: 42px; background: linear-gradient(135deg, #00cc88, #00a870); box-shadow: 0 6px 16px rgba(0,179,119,.25); }
+:is(#individual-pdf-form,#bulk-pdf-form) .bg-slate-200 { color: #33443d !important; }
+:is(#individual-pdf-form,#bulk-pdf-form) label.bg-blue-600 { display: inline-flex; align-items: center; height: 38px; padding: 0 14px; border-radius: 12px; font-size: .8rem; }
+:is(#individual-pdf-form,#bulk-pdf-form) #logo-clear-btn, :is(#individual-pdf-form,#bulk-pdf-form) #bulk-logo-clear-btn { border: 0; border-radius: 12px; height: 38px; padding: 0 14px; width: auto; cursor: pointer; }
+:is(#individual-pdf-form,#bulk-pdf-form) [id$="comment-badge"] { white-space: nowrap; }
+
+/* ── subjects & scores editor (the "pre-fill table") ── */
+#subjects-container { display: flex !important; flex-direction: column; gap: 10px; padding: 0 !important; max-height: none !important; overflow: visible !important; }
+#subjects-container > div.grid {
+  display: grid !important; grid-template-columns: 1fr 1fr 1fr; gap: 8px !important; padding: 12px !important;
+  border: 1.5px solid #e1ebe6 !important; border-radius: 18px !important; background: #fff !important; box-shadow: none !important; position: relative;
+}
+#subjects-container > div.grid .sub-subject { grid-column: 1 / -1; font-weight: 800; }
+#subjects-container > div.grid .sub-test { grid-column: 1 / -1; }
+#subjects-container > div.grid .sub-category { grid-column: 1 / 3; }
+#subjects-container > div.grid .sub-score { grid-column: 3; text-align: center; font-weight: 800; color: #0a7a4a !important; background: #e6f9ef !important; border-color: #bfeed7 !important; }
+#subjects-container > div.grid .sub-date { grid-column: 1 / 3; }
+#subjects-container > div.grid .remove-sub { grid-column: 3; height: 46px; min-height: 46px; border-radius: 14px; border: 0 !important; background: #fdecec !important; color: #c0262b !important; font-weight: 800; cursor: pointer; width: 100%; margin: 0; padding: 0; }
+@media (min-width: 700px) {
+  #subjects-container > div.grid { grid-template-columns: repeat(12, 1fr); }
+  #subjects-container > div.grid .sub-subject { grid-column: span 3; }
+  #subjects-container > div.grid .sub-test { grid-column: span 3; }
+  #subjects-container > div.grid .sub-category { grid-column: span 2; }
+  #subjects-container > div.grid .sub-date { grid-column: span 2; }
+  #subjects-container > div.grid .sub-score { grid-column: span 1; padding: 0 4px !important; }
+  #subjects-container > div.grid .remove-sub { grid-column: span 1; font-size: 0; }
+  #subjects-container > div.grid .remove-sub::before { content: "✕"; font-size: 1rem; }
+}
+
+/* ── dark mode ── */
+body.tm-dark :is(#individual-pdf-form,#bulk-pdf-form) > div { background: #0f1c17; color: #e8f5ef; }
+body.tm-dark :is(#individual-pdf-form,#bulk-pdf-form) .bg-slate-50 { background: #13241e !important; border-color: #1f332b !important; }
+body.tm-dark :is(#individual-pdf-form,#bulk-pdf-form) .bg-amber-50 { background: #2a2312 !important; border-color: #4a3d17 !important; }
+body.tm-dark :is(#individual-pdf-form,#bulk-pdf-form) .bg-blue-50 { background: #0f2a20 !important; border-color: #1d4a3a !important; }
+body.tm-dark :is(#individual-pdf-form,#bulk-pdf-form) .bg-white { background: #12201b !important; }
+body.tm-dark :is(#individual-pdf-form,#bulk-pdf-form) > div > .bg-slate-100 { background: #0f1c17 !important; border-color: #1f332b !important; }
+body.tm-dark :is(#individual-pdf-form,#bulk-pdf-form) > div > .bg-slate-100 button:first-child { background: #1a2d26 !important; color: #e8f5ef !important; }
+body.tm-dark :is(#individual-pdf-form,#bulk-pdf-form) input, body.tm-dark :is(#individual-pdf-form,#bulk-pdf-form) select, body.tm-dark :is(#individual-pdf-form,#bulk-pdf-form) textarea { background: #12201b !important; border-color: #1f332b !important; color: #e8f5ef !important; }
+body.tm-dark :is(#individual-pdf-form,#bulk-pdf-form) input[readonly] { background: #0f1c17 !important; }
+body.tm-dark :is(#individual-pdf-form,#bulk-pdf-form) .text-slate-800, body.tm-dark :is(#individual-pdf-form,#bulk-pdf-form) .text-slate-700, body.tm-dark :is(#individual-pdf-form,#bulk-pdf-form) .text-blue-900 { color: #e8f5ef !important; }
+body.tm-dark :is(#individual-pdf-form,#bulk-pdf-form) .text-slate-500, body.tm-dark :is(#individual-pdf-form,#bulk-pdf-form) .text-slate-600, body.tm-dark :is(#individual-pdf-form,#bulk-pdf-form) .text-slate-400 { color: #8fa89d !important; }
+body.tm-dark :is(#individual-pdf-form,#bulk-pdf-form) .border-slate-200, body.tm-dark :is(#individual-pdf-form,#bulk-pdf-form) .border-slate-300, body.tm-dark :is(#individual-pdf-form,#bulk-pdf-form) .border-b { border-color: #1f332b !important; }
+body.tm-dark #subjects-container > div.grid { background: #12201b !important; border-color: #1f332b !important; }
+body.tm-dark #subjects-container > div.grid .sub-score { background: #12362a !important; color: #6fe0b4 !important; border-color: #1d4a3a !important; }
+body.tm-dark #subjects-container > div.grid .remove-sub { background: #3a1d23 !important; color: #ff8e92 !important; }
+
+:is(#individual-pdf-form,#bulk-pdf-form) ::placeholder { color: #8da398 !important; opacity: 1 !important; -webkit-text-fill-color: #8da398; }
+:is(#individual-pdf-form,#bulk-pdf-form) select { font-size: 14px !important; padding-right: 30px !important; text-overflow: ellipsis; }
+:is(#individual-pdf-form,#bulk-pdf-form) .grid-cols-2 > div { min-width: 0; }
