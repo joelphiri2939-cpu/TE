@@ -38,23 +38,23 @@ jobs:
           echo "$GITHUB_WORKSPACE/emsdk" >> "$GITHUB_PATH"
           echo "$GITHUB_WORKSPACE/emsdk/upstream/emscripten" >> "$GITHUB_PATH"
 
-      - name: Download English 20M model
+      - name: Download English streaming Zipformer model
         run: |
           mkdir -p model
           curl -L --fail --retry 3 \
             -o model.zip.bz2 \
-            https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-streaming-zipformer-en-20M-2023-02-17.tar.bz2
+            https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-streaming-zipformer-en-2023-06-21.tar.bz2
           tar -xjf model.zip.bz2 -C model
           rm model.zip.bz2
 
       - name: Prepare browser model assets
         run: |
-          MODEL="model/sherpa-onnx-streaming-zipformer-en-20M-2023-02-17"
+          MODEL="model/sherpa-onnx-streaming-zipformer-en-2023-06-21"
           ASSETS="sherpa-onnx/wasm/asr/assets"
 
           cp "$MODEL/encoder-epoch-99-avg-1.int8.onnx" "$ASSETS/encoder.onnx"
           cp "$MODEL/decoder-epoch-99-avg-1.onnx" "$ASSETS/decoder.onnx"
-          cp "$MODEL/joiner-epoch-99-avg-1.int8.onnx" "$ASSETS/joiner.onnx"
+          cp "$MODEL/joiner-epoch-99-avg-1.onnx" "$ASSETS/joiner.onnx"
           cp "$MODEL/tokens.txt" "$ASSETS/tokens.txt"
 
           ls -lh "$ASSETS"
