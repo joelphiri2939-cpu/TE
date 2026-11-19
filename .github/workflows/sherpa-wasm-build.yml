@@ -1,0 +1,84 @@
+
+name: Build TeachMate Offline Speech Engine
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - ".github/workflows/sherpa-wasm-build.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: Compile sherpa-onnx WebAssembly ASR
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install build dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y git curl tar cmake build-essential
+
+      - name: Download sherpa-onnx source
+        run: |
+          git clone --depth 1 https://github.com/k2-fsa/sherpa-onnx.git sherpa-onnx
+
+      - name: Install Emscripten 4.0.23
+        run: |
+          git clone https://github.com/emscripten-core/emsdk.git
+          cd emsdk
+          ./emsdk install 4.0.23
+          ./emsdk activate 4.0.23
+          echo "$GITHUB_WORKSPACE/emsdk" >> "$GITHUB_PATH"
+          echo "$GITHUB_WORKSPACE/emsdk/upstream/emscripten" >> "$GITHUB_PATH"
+
+      - name: Download English 20M model
+        run: |
+          mkdir -p model
+          curl -L --fail --retry 3 \
+            -o model.zip.bz2 \
+            https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-streaming-zipformer-en-20M-2023-02-17.tar.bz2
+          tar -xjf model.zip.bz2 -C model
+          rm model.zip.bz2
+
+      - name: Prepare browser model assets
+        run: |
+          MODEL="model/sherpa-onnx-streaming-zipformer-en-20M-2023-02-17"
+          ASSETS="sherpa-onnx/wasm/asr/assets"
+
+          cp "$MODEL/encoder-epoch-99-avg-1.int8.onnx" "$ASSETS/encoder.onnx"
+          cp "$MODEL/decoder-epoch-99-avg-1.onnx" "$ASSETS/decoder.onnx"
+          cp "$MODEL/joiner-epoch-99-avg-1.int8.onnx" "$ASSETS/joiner.onnx"
+          cp "$MODEL/tokens.txt" "$ASSETS/tokens.txt"
+
+          ls -lh "$ASSETS"
+
+      - name: Compile WebAssembly speech engine
+        run: |
+          cd sherpa-onnx
+          source ../emsdk/emsdk_env.sh
+          ./build-wasm-simd-asr.sh
+
+      - name: Verify compiled files
+        run: |
+          OUT="sherpa-onnx/build-wasm-simd-asr/install/bin/wasm/asr"
+
+          ls -lh "$OUT"
+
+          test -s "$OUT/sherpa-onnx-wasm-main-asr.wasm"
+          test -s "$OUT/sherpa-onnx-wasm-main-asr.js"
+          test -s "$OUT/sherpa-onnx-wasm-main-asr.data"
+
+      - name: Upload offline speech engine
+        uses: actions/upload-artifact@v4
+        with:
+          name: teachmate-offline-speech-engine
+          path: sherpa-onnx/build-wasm-simd-asr/install/bin/wasm/asr/
+          if-no-files-found: error
+          retention-days: 14
