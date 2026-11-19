@@ -1,0 +1,46 @@
+
+name: Publish TeachMate Offline Speech Engine
+
+on:
+  workflow_dispatch:
+
+permissions:
+  actions: read
+  contents: write
+
+jobs:
+  publish:
+    name: Publish tested speech engine
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Download the successful tested build
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh run download 44597514550 \
+            --repo "$GITHUB_REPOSITORY" \
+            --name teachmate-offline-speech-engine \
+            --dir speech-engine
+
+          test -s speech-engine/sherpa-onnx-wasm-main-asr.data
+          test -s speech-engine/sherpa-onnx-wasm-main-asr.js
+          test -s speech-engine/sherpa-onnx-wasm-main-asr.wasm
+          test -s speech-engine/sherpa-onnx-asr.js
+
+      - name: Publish permanent release assets
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          TAG="teachmate-speech-engine-v1"
+          mapfile -t ASSETS < <(find speech-engine -maxdepth 1 -type f -print)
+
+          if gh release view "$TAG" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            gh release upload "$TAG" "${ASSETS[@]}" \
+              --repo "$GITHUB_REPOSITORY" --clobber
+          else
+            gh release create "$TAG" "${ASSETS[@]}" \
+              --repo "$GITHUB_REPOSITORY" \
+              --title "TeachMate Offline Speech Engine v1" \
+              --notes "Permanent hosting for the tested offline speech recognition engine."
+          fi
