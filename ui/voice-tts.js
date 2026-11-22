@@ -1,59 +1,337 @@
-/* TeachMate Voice Output — browser/device speech synthesis (no cloud service). */
+/*
+ * TeachMate Neural Voice Output
+ * Offline Kokoro TTS through sherpa-onnx WebAssembly.
+ * The model is downloaded once from the public model repository and cached
+ * by the service worker. Speech generation itself runs locally on-device.
+ */
 (function () {
   'use strict';
-  if (window.TeachMateTTS) return;
-  var synth = window.speechSynthesis;
+  if (window.TeachMateTTS && window.TeachMateTTS.engine === 'kokoro-wasm') return;
+
+  var ASSET_BASE = 'https://huggingface.co/datasets/jiangzhuo9357/sherpa-onnx-tts-models/resolve/main/wasm-kokoro-v1_0-fp32/';
   var enabled = true;
-  var rate = 1;
-  var selectedVoiceURI = '';
-  var panel;
-  function voices() { return synth ? synth.getVoices() : []; }
-  function chosenVoice() {
-    var list = voices();
-    return list.find(function (v) { return v.voiceURI === selectedVoiceURI; }) ||
-      list.find(function (v) { return /^en/i.test(v.lang); }) || list[0] || null;
+  var rate = 1.0;
+  var speakerId = 3;
+  var panel = null;
+  var statusNode = null;
+  var loadButton = null;
+  var tts = null;
+  var loadingPromise = null;
+  var loadStarted = false;
+  var queuedText = '';
+  var audioContext = null;
+  var currentSource = null;
+  var chunks = [];
+  var speaking = false;
+  var generationToken = 0;
+
+  // Kokoro v1.0 speaker IDs. The first 20 are US English, next 8 are UK English.
+  var SPEAKERS = [
+    ['af_alloy', 'Alloy — US female'], ['af_aoede', 'Aoede — US female'],
+    ['af_bella', 'Bella — US female'], ['af_heart', 'Heart — US female'],
+    ['af_jessica', 'Jessica — US female'], ['af_kore', 'Kore — US female'],
+    ['af_nicole', 'Nicole — US female'], ['af_nova', 'Nova — US female'],
+    ['af_river', 'River — US female'], ['af_sarah', 'Sarah — US female'],
+    ['af_sky', 'Sky — US female'], ['am_adam', 'Adam — US male'],
+    ['am_echo', 'Echo — US male'], ['am_eric', 'Eric — US male'],
+    ['am_fenrir', 'Fenrir — US male'], ['am_liam', 'Liam — US male'],
+    ['am_michael', 'Michael — US male'], ['am_onyx', 'Onyx — US male'],
+    ['am_puck', 'Puck — US male'], ['am_santa', 'Santa — US male'],
+    ['bf_alice', 'Alice — UK female'], ['bf_emma', 'Emma — UK female'],
+    ['bf_isabella', 'Isabella — UK female'], ['bf_lily', 'Lily — UK female'],
+    ['bm_daniel', 'Daniel — UK male'], ['bm_fable', 'Fable — UK male'],
+    ['bm_george', 'George — UK male'], ['bm_lewis', 'Lewis — UK male']
+  ];
+
+  function setStatus(message, kind) {
+    if (!statusNode) return;
+    statusNode.textContent = message;
+    statusNode.className = 'tm-tts-status' + (kind ? ' ' + kind : '');
   }
-  function stop() { if (synth) synth.cancel(); }
+
+  function getAudioContext() {
+    var AudioCtx = window.AudioContext || window.webkitAudioContext;
+    if (!AudioCtx) throw new Error('This browser does not support Web Audio.');
+    if (!audioContext) audioContext = new AudioCtx();
+    if (audioContext.state === 'suspended') audioContext.resume().catch(function () {});
+    return audioContext;
+  }
+
+  function loadScript(src) {
+    return new Promise(function (resolve, reject) {
+      var script = document.createElement('script');
+      script.src = src;
+      script.async = false;
+      script.onload = resolve;
+      script.onerror = function () { reject(new Error('Could not load neural voice runtime: ' + src)); };
+      document.head.appendChild(script);
+    });
+  }
+
+  function initializeTts() {
+    if (tts) return Promise.resolve(tts);
+    if (loadingPromise) return loadingPromise;
+    loadStarted = true;
+    if (loadButton) { loadButton.disabled = true; loadButton.textContent = 'Loading neural voice…'; }
+    setStatus('Preparing the offline neural voice. The first download is about 427 MB; keep internet on until it finishes.', 'loading');
+
+    // Ask the browser to retain the model cache when persistent storage is available.
+    if (navigator.storage && navigator.storage.persist) {
+      navigator.storage.persist().catch(function () {});
+    }
+
+    loadingPromise = new Promise(function (resolve, reject) {
+      var settled = false;
+      var timeout = window.setTimeout(function () {
+        if (!settled && !tts) finishError(new Error('The neural voice took too long to initialize. Check your connection and reload TeachMate.'));
+      }, 12 * 60 * 1000);
+
+      function finishError(error) {
+        if (settled) return;
+        settled = true;
+        window.clearTimeout(timeout);
+        loadingPromise = null;
+        if (loadButton) { loadButton.disabled = false; loadButton.textContent = 'Retry neural voice download'; }
+        setStatus(error && error.message ? error.message : 'Neural voice initialization failed.', 'error');
+        reject(error || new Error('Neural voice initialization failed.'));
+      }
+
+      function finishReady() {
+        if (settled || tts) return;
+        try {
+          if (typeof window.createOfflineTts !== 'function') {
+            throw new Error('The Kokoro TTS interface did not load correctly.');
+          }
+          var config = {
+            offlineTtsModelConfig: {
+              offlineTtsKokoroModelConfig: {
+                model: './model.onnx',
+                voices: './voices.bin',
+                tokens: './tokens.txt',
+                dataDir: './espeak-ng-data',
+                lexicon: './lexicon-us-en.txt,./lexicon-zh.txt',
+                lengthScale: 1.0,
+                lang: ''
+              },
+              numThreads: 1,
+              debug: 0,
+              provider: 'cpu'
+            },
+            ruleFsts: '',
+            ruleFars: '',
+            maxNumSentences: 1
+          };
+          tts = window.createOfflineTts(window.Module, config);
+          if (!tts || typeof tts.generate !== 'function') throw new Error('Kokoro initialized without a speech generator.');
+          settled = true;
+          window.clearTimeout(timeout);
+          if (loadButton) { loadButton.disabled = false; loadButton.textContent = 'Neural voice ready'; }
+          setStatus('Offline neural voice ready. The model is stored in this browser cache.', 'ready');
+          resolve(tts);
+          if (queuedText && enabled) {
+            var pending = queuedText;
+            queuedText = '';
+            speak(pending);
+          }
+        } catch (error) {
+          finishError(error);
+        }
+      }
+
+      window.Module = {
+        locateFile: function (path) { return ASSET_BASE + path; },
+        setStatus: function (message) {
+          if (message) {
+            var match = String(message).match(/Downloading data\.\.\. \((\d+)\/(\d+)\)/);
+            if (match) {
+              var percent = Math.min(100, Math.round(Number(match[1]) / Math.max(1, Number(match[2])) * 100));
+              setStatus('Downloading neural voice model… ' + percent + '% (first setup only)', 'loading');
+            } else {
+              setStatus(String(message), 'loading');
+            }
+          } else {
+            finishReady();
+          }
+        },
+        onAbort: function (reason) {
+          finishError(new Error('Neural voice runtime stopped: ' + (reason || 'unknown error')));
+        }
+      };
+
+      loadScript(ASSET_BASE + 'sherpa-onnx-wasm-main-tts.js')
+        .then(function () { return loadScript(ASSET_BASE + 'sherpa-onnx-tts.js'); })
+        .catch(finishError);
+    });
+    return loadingPromise;
+  }
+
+  function splitIntoChunks(text) {
+    var normalized = String(text).replace(/<[^>]*>/g, ' ').replace(/&nbsp;/gi, ' ').replace(/&amp;/gi, '&').replace(/\s+/g, ' ').trim();
+    if (!normalized) return [];
+    var sentences = normalized.match(/[^.!?]+[.!?]?/g) || [normalized];
+    var result = [];
+    sentences.forEach(function (sentence) {
+      sentence = sentence.trim();
+      while (sentence.length > 260) {
+        var cut = sentence.lastIndexOf(' ', 260);
+        if (cut < 100) cut = 260;
+        result.push(sentence.slice(0, cut).trim());
+        sentence = sentence.slice(cut).trim();
+      }
+      if (sentence) result.push(sentence);
+    });
+    return result;
+  }
+
+  function stop() {
+    generationToken++;
+    chunks = [];
+    speaking = false;
+    if (currentSource) {
+      try { currentSource.onended = null; currentSource.stop(); } catch (_) {}
+      currentSource = null;
+    }
+  }
+
+  function playNext(token) {
+    if (token !== generationToken || !chunks.length) {
+      if (token === generationToken) speaking = false;
+      return;
+    }
+    var text = chunks.shift();
+    try {
+      setStatus('Speaking with the offline neural voice…', 'ready');
+      var result = tts.generate({ text: text, sid: speakerId, speed: rate });
+      if (!result || !result.samples || !result.samples.length || !result.sampleRate) {
+        throw new Error('The neural voice returned empty audio.');
+      }
+      var samples = result.samples;
+      var finiteCount = 0;
+      var nonZeroCount = 0;
+      for (var i = 0; i < samples.length; i++) {
+        if (Number.isFinite(samples[i])) finiteCount++;
+        if (Number.isFinite(samples[i]) && Math.abs(samples[i]) > 0.000001) nonZeroCount++;
+      }
+      if (finiteCount !== samples.length || !nonZeroCount) {
+        throw new Error('The model produced invalid or silent audio. Stop and reload TeachMate, then retry.');
+      }
+      var ctx = getAudioContext();
+      var buffer = ctx.createBuffer(1, samples.length, result.sampleRate);
+      var channel = buffer.getChannelData(0);
+      for (var j = 0; j < samples.length; j++) channel[j] = samples[j];
+      var source = ctx.createBufferSource();
+      source.buffer = buffer;
+      source.connect(ctx.destination);
+      currentSource = source;
+      source.onended = function () {
+        if (currentSource === source) currentSource = null;
+        if (token === generationToken) window.setTimeout(function () { playNext(token); }, 20);
+      };
+      source.start(0);
+    } catch (error) {
+      stop();
+      setStatus(error.message || 'Speech generation failed.', 'error');
+      console.error('[TeachMate TTS]', error);
+    }
+  }
+
   function speak(text) {
-    if (!synth || !enabled || !text) return false;
-    stop();
+    if (!enabled || !text) return false;
     var clean = String(text).replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
     if (!clean) return false;
-    var utterance = new SpeechSynthesisUtterance(clean);
-    utterance.rate = rate;
-    var voice = chosenVoice();
-    if (voice) utterance.voice = voice;
-    synth.speak(utterance);
+    if (!tts) {
+      queuedText = clean;
+      if (!loadStarted) setStatus('Tap “Download & enable neural voice” once. Your next response will then be spoken.', 'warn');
+      if (panel) panel.hidden = false;
+      return false;
+    }
+    stop();
+    chunks = splitIntoChunks(clean);
+    if (!chunks.length) return false;
+    speaking = true;
+    var token = generationToken;
+    playNext(token);
     return true;
   }
-  function makePanel() {
+
+  function buildPanel() {
     if (panel) return;
     var style = document.createElement('style');
-    style.textContent = '#tm-tts-panel{position:fixed;right:16px;bottom:76px;z-index:100000;background:#fff;color:#17202a;border:1px solid #ccd3d8;border-radius:14px;padding:14px;width:min(290px,calc(100vw - 32px));box-shadow:0 8px 30px #0003;font:14px system-ui}#tm-tts-panel label{display:block;margin:10px 0 5px}#tm-tts-panel select,#tm-tts-panel input{width:100%;box-sizing:border-box}#tm-tts-panel button{margin:8px 6px 0 0;padding:8px 12px;border:0;border-radius:8px;background:#087f5b;color:white}#tm-tts-toggle{position:fixed;right:16px;bottom:16px;z-index:100000;border:0;border-radius:50%;width:50px;height:50px;background:#087f5b;color:white;font-size:22px;box-shadow:0 3px 12px #0004}';
+    style.textContent = '#tm-tts-panel{position:fixed;right:16px;bottom:76px;z-index:100000;background:#fff;color:#17202a;border:1px solid #ccd3d8;border-radius:14px;padding:14px;width:min(320px,calc(100vw - 32px));max-height:70vh;overflow:auto;box-shadow:0 8px 30px #0003;font:14px system-ui}#tm-tts-panel label{display:block;margin:10px 0 5px}#tm-tts-panel select,#tm-tts-panel input{width:100%;box-sizing:border-box}#tm-tts-panel button{margin:8px 6px 0 0;padding:9px 12px;border:0;border-radius:8px;background:#087f5b;color:white;font:inherit}#tm-tts-panel button:disabled{opacity:.55}#tm-tts-panel .tm-tts-status{font-size:12px;line-height:1.45;margin:10px 0;padding:9px;border-radius:8px;background:#edf2f4;overflow-wrap:anywhere}#tm-tts-panel .tm-tts-status.ready{background:#e5f6ec;color:#176b3a}#tm-tts-panel .tm-tts-status.error{background:#fff0f0;color:#a11}#tm-tts-panel .tm-tts-status.warn{background:#fff7df;color:#785500}#tm-tts-panel .tm-tts-status.loading{background:#eaf2ff;color:#174b8b}#tm-tts-panel .tm-tts-note{font-size:11px;color:#5e6870;line-height:1.4;margin-top:8px}#tm-tts-toggle{position:fixed;right:16px;bottom:16px;z-index:100000;border:0;border-radius:50%;width:50px;height:50px;background:#087f5b;color:white;font-size:22px;box-shadow:0 3px 12px #0004}';
     document.head.appendChild(style);
-    var toggle = document.createElement('button'); toggle.id = 'tm-tts-toggle'; toggle.type = 'button'; toggle.textContent = '🔊'; toggle.title = 'Voice output settings'; toggle.setAttribute('aria-label','Voice output settings');
-    panel = document.createElement('div'); panel.id = 'tm-tts-panel'; panel.hidden = true;
-    panel.innerHTML = '<strong>TeachMate voice output</strong><label><input id="tm-tts-enabled" type="checkbox" checked> Speak assistant responses automatically</label><label for="tm-tts-voice">Voice</label><select id="tm-tts-voice"></select><label for="tm-tts-rate">Speaking speed: <span id="tm-tts-rate-value">1.0×</span></label><input id="tm-tts-rate" type="range" min="0.7" max="1.4" step="0.1" value="1"><button type="button" id="tm-tts-test">Test voice</button><button type="button" id="tm-tts-stop">Stop</button>';
-    document.body.appendChild(toggle); document.body.appendChild(panel);
-    toggle.addEventListener('click', function(){ panel.hidden = !panel.hidden; refreshVoices(); });
-    panel.querySelector('#tm-tts-enabled').addEventListener('change',function(e){ enabled=e.target.checked; });
-    panel.querySelector('#tm-tts-rate').addEventListener('input',function(e){ rate=Number(e.target.value); panel.querySelector('#tm-tts-rate-value').textContent=rate.toFixed(1)+'×'; });
-    panel.querySelector('#tm-tts-voice').addEventListener('change',function(e){ selectedVoiceURI=e.target.value; });
-    panel.querySelector('#tm-tts-test').addEventListener('click',function(){ speak('Hello. TeachMate voice output is ready.'); });
-    panel.querySelector('#tm-tts-stop').addEventListener('click',stop);
-    refreshVoices();
+
+    var toggle = document.createElement('button');
+    toggle.id = 'tm-tts-toggle'; toggle.type = 'button'; toggle.textContent = '🔊';
+    toggle.title = 'Neural voice settings'; toggle.setAttribute('aria-label', 'Neural voice settings');
+
+    panel = document.createElement('div');
+    panel.id = 'tm-tts-panel'; panel.hidden = true;
+    panel.innerHTML = '<strong>TeachMate neural voice</strong>' +
+      '<div id="tm-tts-status" class="tm-tts-status">Neural voice has not been downloaded yet.</div>' +
+      '<button type="button" id="tm-tts-load">Download &amp; enable neural voice</button>' +
+      '<label for="tm-tts-voice">Voice</label><select id="tm-tts-voice"></select>' +
+      '<label for="tm-tts-rate">Speaking speed: <span id="tm-tts-rate-value">1.0×</span></label>' +
+      '<input id="tm-tts-rate" type="range" min="0.8" max="1.2" step="0.05" value="1">' +
+      '<label><input id="tm-tts-enabled" type="checkbox" checked> Speak assistant responses automatically</label>' +
+      '<button type="button" id="tm-tts-test">Test voice</button><button type="button" id="tm-tts-stop">Stop</button>' +
+      '<div class="tm-tts-note">First setup downloads approximately 427 MB. After it is cached, speech generation runs on this device without internet. Keep enough free storage available.</div>';
+
+    document.body.appendChild(toggle);
+    document.body.appendChild(panel);
+    statusNode = panel.querySelector('#tm-tts-status');
+    loadButton = panel.querySelector('#tm-tts-load');
+
+    var voiceSelect = panel.querySelector('#tm-tts-voice');
+    SPEAKERS.forEach(function (speaker, id) {
+      var option = document.createElement('option');
+      option.value = String(id);
+      option.textContent = speaker[1];
+      voiceSelect.appendChild(option);
+    });
+    voiceSelect.value = String(speakerId);
+    voiceSelect.addEventListener('change', function (event) { speakerId = Number(event.target.value) || 0; });
+
+    toggle.addEventListener('click', function () { panel.hidden = !panel.hidden; });
+    panel.querySelector('#tm-tts-enabled').addEventListener('change', function (event) { enabled = event.target.checked; if (!enabled) stop(); });
+    panel.querySelector('#tm-tts-rate').addEventListener('input', function (event) {
+      rate = Number(event.target.value);
+      panel.querySelector('#tm-tts-rate-value').textContent = rate.toFixed(2).replace(/0$/, '') + '×';
+    });
+    loadButton.addEventListener('click', function () {
+      try { getAudioContext(); } catch (error) { setStatus(error.message, 'error'); return; }
+      initializeTts().catch(function (error) { console.error('[TeachMate TTS]', error); });
+    });
+    panel.querySelector('#tm-tts-test').addEventListener('click', function () {
+      try { getAudioContext(); } catch (error) { setStatus(error.message, 'error'); return; }
+      if (!tts) {
+        initializeTts().then(function () { speak('Hello! This is TeachMate speaking with its offline neural voice.'); })
+          .catch(function (error) { console.error('[TeachMate TTS]', error); });
+      } else {
+        speak('Hello! This is TeachMate speaking with its offline neural voice.');
+      }
+    });
+    panel.querySelector('#tm-tts-stop').addEventListener('click', stop);
   }
-  function refreshVoices() {
-    if (!panel) return;
-    var select=panel.querySelector('#tm-tts-voice'), list=voices(), previous=selectedVoiceURI;
-    select.innerHTML='';
-    list.forEach(function(v){ var option=document.createElement('option'); option.value=v.voiceURI; option.textContent=v.name+' ('+v.lang+')'; select.appendChild(option); });
-    if (previous && list.some(function(v){return v.voiceURI===previous;})) select.value=previous;
-    else if (list.length) { var v=chosenVoice(); if(v) {selectedVoiceURI=v.voiceURI; select.value=v.voiceURI;} }
-  }
-  window.TeachMateTTS={speak:speak,stop:stop,setAutoSpeak:function(value){enabled=!!value;if(panel)panel.querySelector('#tm-tts-enabled').checked=enabled;},isAutoSpeakEnabled:function(){return enabled;},refreshVoices:refreshVoices};
-  window.addEventListener('teachmate:assistant-response',function(event){var detail=event.detail||{};if(detail.text) speak(detail.text);});
-  document.addEventListener('click',function(event){var target=event.target.closest('[data-tts-speak]');if(target)speak(target.getAttribute('data-tts-speak'));});
-  if (synth) synth.onvoiceschanged=refreshVoices;
-  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',makePanel);else makePanel();
+
+  window.TeachMateTTS = {
+    engine: 'kokoro-wasm',
+    speak: speak,
+    stop: stop,
+    setAutoSpeak: function (value) { enabled = !!value; if (panel) panel.querySelector('#tm-tts-enabled').checked = enabled; if (!enabled) stop(); },
+    isAutoSpeakEnabled: function () { return enabled; },
+    isReady: function () { return !!tts; },
+    load: initializeTts
+  };
+
+  window.addEventListener('teachmate:assistant-response', function (event) {
+    var detail = event.detail || {};
+    if (detail.text) speak(detail.text);
+  });
+  document.addEventListener('click', function (event) {
+    var target = event.target.closest('[data-tts-speak]');
+    if (target) speak(target.getAttribute('data-tts-speak'));
+  });
+
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', buildPanel);
+  else buildPanel();
 })();
