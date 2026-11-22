@@ -1,42 +1,20 @@
-TEACHMATE OFFLINE DICTATION INTEGRATION
+TEACHMATE VOICE OUTPUT INTEGRATION
 
-Files to place in the repository:
+This ZIP contains the complete updated index.html, service-worker.js, and ui/voice-tts.js.
 
-1. index.html
-   Replace the repository-root index.html with this version.
+Repository placement:
+- Replace repository index.html with this index.html.
+- Replace repository service-worker.js with this service-worker.js.
+- Add ui/voice-tts.js at repository path ui/voice-tts.js.
 
-2. ui/speech.js
-   Add this new file at ui/speech.js.
+The index already includes <script src="ui/voice-tts.js"></script> immediately after ui/speech.js. Do not add it again.
 
-3. service-worker.js
-   Replace the repository-root service-worker.js with this version.
+Voice output uses the browser/device SpeechSynthesis API. It does not download audio or use a cloud service. Offline speech depends on an offline TTS voice installed on the device.
 
-The index change is deliberately minimal: it adds ui/speech.js after ui/features.js.
-The service worker cache version is bumped to teachmate-v6 and includes ui/speech.js
-in the app shell. The speech model cache uses the separate name tm-speech-engine-v1,
-so the service worker's old-app-cache cleanup will not delete the model cache.
+API for future assistant responses:
+window.TeachMateTTS.speak(responseText);
 
-The sherpa JavaScript API, WASM loader, WASM binary, and model data are fetched from
-the existing public R2 bucket. The API script, loader, WASM binary, and model data are
-saved in Cache Storage where the browser permits. The model is not added to the
-service-worker app-shell cache.
+Or dispatch an event:
+window.dispatchEvent(new CustomEvent("teachmate:assistant-response", {detail:{text:responseText}}));
 
-FIRST USE
-- Open TeachMate while online.
-- Tap a microphone icon beside an eligible text field or textarea.
-- Allow microphone access.
-- Wait for the first engine download (about 205 MB total, including the model data
-  and WASM runtime). Do not close the page while it initializes.
-- Dictate, then tap the red stop icon. Recognized words are inserted at the field's
-  current cursor/selection. Existing text is preserved.
-
-LATER / OFFLINE TEST
-- Reload while online once so the new service worker controls the page.
-- Use dictation once and wait until the model is ready and the status message confirms
-  browser storage caching succeeded.
-- Close/reopen TeachMate, then test dictation with the device offline.
-- Offline operation is not confirmed until that test succeeds. Browser storage quota,
-  eviction, or private-browsing restrictions can prevent persistent caching.
-
-Only microphone audio is processed locally for transcription. This integration does
-not upload or save audio recordings. It inserts recognized text into the selected field.
+A working conversational assistant must call this API when it generates a response. This package provides speech output, not an AI response engine.
