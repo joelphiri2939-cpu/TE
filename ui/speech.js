@@ -248,6 +248,11 @@
   function insertTranscript(field, transcript) {
     transcript = String(transcript || '').trim();
     if (!transcript || !field || !field.isConnected) return;
+    // Voice-command box: send the words to the command engine instead of typing them into the field.
+    if (field.hasAttribute && field.hasAttribute('data-tm-voice-command')) {
+      try { document.dispatchEvent(new CustomEvent('teachmate:voice-command', { detail: { text: transcript, autoRun: true } })); } catch (e) {}
+      return;
+    }
     var value = field.value || '';
     var start = value.length;
     var end = value.length;
@@ -319,6 +324,7 @@
   async function startRecording(field, button) {
     if (startInProgress) return;
     startInProgress = true;
+    try { if (window.TeachMateTTS && window.TeachMateTTS.stop) window.TeachMateTTS.stop(); } catch (e) {}
     if (active) await stopRecording();
     if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
       startInProgress = false;
