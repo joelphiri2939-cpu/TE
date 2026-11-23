@@ -1,0 +1,85 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><title>TeachMate voice engine</title></head>
+<body>
+<script>
+/* Runs the Kokoro neural voice in its OWN page context, so its WebAssembly runtime (which uses a global named
+ * "Module") can never collide with the speech-recognition runtime, and a crash here cannot take TeachMate down.
+ * Ready is declared ONLY when (1) the runtime has really initialised (onRuntimeInitialized) AND (2) the wrapper is
+ * loaded AND (3) the required exports exist. Downloading a script is never treated as "initialised". */
+(function () {
+  'use strict';
+  var BASE = new URLSearchParams(location.search).get('base') || '';
+  var tts = null, wrapperLoaded = false, runtimeReady = false, failed = false, tries = 0;
+  var NEED = ['_malloc', '_free', 'lengthBytesUTF8', 'stringToUTF8', 'HEAPU8', 'HEAPF32', 'HEAP32'];
+
+  function send(msg, transfer) { msg.tm = 'kokoro'; parent.postMessage(msg, location.origin, transfer || []); }
+  function fail(err, id) {
+    var message = err && err.message ? err.message : String(err);
+    if (id) return send({ type: 'error', id: id, message: message });
+    if (failed) return; failed = true; send({ type: 'error', message: message });
+  }
+  function loadScript(src) {
+    return new Promise(function (resolve, reject) {
+      var s = document.createElement('script');
+      s.src = src; s.async = true; s.onload = resolve;
+      s.onerror = function () { reject(new Error('Could not load ' + src.split('/').pop() + '. First setup needs internet; later it should come from the offline copy.')); };
+      document.head.appendChild(s);
+    });
+  }
+  function missing() { var m = window.Module; return NEED.filter(function (k) { return !m || m[k] === undefined || m[k] === null; }); }
+
+  function tryFinish() {
+    if (tts || failed || !runtimeReady || !wrapperLoaded) return;      // both signals are required
+    var miss = missing();
+    if (miss.length) {                                                 // allow a moment for exports to appear, then report precisely
+      if (++tries <= 24) { setTimeout(tryFinish, 250); return; }
+      return fail(new Error('Kokoro WebAssembly initialized without required exports: ' + miss.join(', ') + '. The runtime and wrapper files may not match.'));
+    }
+    try {
+      if (typeof window.createOfflineTts !== 'function') throw new Error('The Kokoro wrapper (sherpa-onnx-tts.js) did not load correctly.');
+      try {
+        tts = window.createOfflineTts(window.Module);                  // the wrapper's own default = exactly the files this build ships
+      } catch (first) {
+        console.warn('[kokoro-frame] default config failed, trying explicit config:', first);
+        tts = window.createOfflineTts(window.Module, {
+          offlineTtsModelConfig: {
+            offlineTtsKokoroModelConfig: { model: './model.onnx', voices: './voices.bin', tokens: './tokens.txt', dataDir: './espeak-ng-data', lexicon: './lexicon-us-en.txt,./lexicon-zh.txt', lengthScale: 1.0, lang: '' },
+            numThreads: 1, debug: 0, provider: 'cpu'
+          },
+          ruleFsts: '', ruleFars: '', maxNumSentences: 1
+        });
+      }
+      if (!tts || typeof tts.generate !== 'function') throw new Error('Kokoro initialized without a speech generator.');
+      send({ type: 'ready', sampleRate: tts.sampleRate || 24000, numSpeakers: tts.numSpeakers || 0 });
+    } catch (e) { fail(e); }
+  }
+
+  window.Module = {
+    locateFile: function (p) { return BASE + p; },
+    setStatus: function (m) { if (m) send({ type: 'status', message: String(m) }); },   // empty status is NOT a ready signal
+    onRuntimeInitialized: function () { runtimeReady = true; send({ type: 'status', message: 'WebAssembly runtime initialized; preparing Kokoro…' }); tryFinish(); },
+    onAbort: function (r) { fail(new Error('Neural voice runtime stopped: ' + (r || 'unknown error'))); }
+  };
+
+  window.addEventListener('message', function (e) {
+    if (e.source !== parent || !e.data || e.data.tm !== 'kokoro-cmd') return;
+    var d = e.data;
+    if (d.type !== 'speak') return;
+    if (!tts) return fail(new Error('The neural voice is not ready yet.'), d.id);
+    try {
+      var r = tts.generate({ text: d.text, sid: d.sid, speed: d.speed });
+      if (!r || !r.samples || !r.samples.length) throw new Error('The neural voice returned empty audio.');
+      var copy = new Float32Array(r.samples);                          // copy out of WebAssembly memory
+      send({ type: 'audio', id: d.id, samples: copy, sampleRate: r.sampleRate }, [copy.buffer]);
+    } catch (err) { fail(err, d.id); }
+  });
+
+  send({ type: 'hello' });
+  // wrapper first (it only defines functions), then the runtime; readiness waits for onRuntimeInitialized
+  loadScript(BASE + 'sherpa-onnx-tts.js')
+    .then(function () { wrapperLoaded = true; return loadScript(BASE + 'sherpa-onnx-wasm-main-tts.js'); })
+    .then(function () { tryFinish(); })
+    .catch(function (e) { fail(e); });
+})();
+</script>
+</body></html>
