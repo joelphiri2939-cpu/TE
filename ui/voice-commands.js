@@ -229,7 +229,8 @@
     var score = Number(nums[0]);
     if (score < 0 || score > 100) return { ask: 'Marks must be between 0 and 100. Please say the learner and a mark from 0 to 100.' };
     var K = window.TeachMateKnowledge, ex = K && K.extract ? K.extract(t) : null;
-    if (!ex || ex.found.length !== 1) return null;
+    if (!ex || !ex.found.length) return { ask: 'Which learner should receive ' + score + ' marks? Please say the learner name and mark.' };
+    if (ex.found.length !== 1) return { ask: 'I found more than one learner in that instruction. Please say one learner at a time.' };
     if (ex.found[0].many && ex.found[0].many.length > 1) return { ask: 'I found more than one matching learner. Please say the full name.' };
     var task = taskById('res_enter_marks');
     return task ? direct(task, { pairs: [{ name: ex.found[0].student.name, score: score }] }, t) : null;
