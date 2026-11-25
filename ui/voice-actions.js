@@ -70,7 +70,6 @@
     var opts = [].slice.call(sel.options).filter(function (o) { return o.value; });
     var m = t.match(/(?:grade|class|form)\s*(\d+)\s*([a-z])?\b/);
     var all = opts.map(function (o) { return o.text; });
-    // Schools use names such as "Blue House" and "Mpelembe A"; match those real option labels too.
     if (!m) {
       var heard = norm(t);
       var named = opts.filter(function (o) {
