@@ -302,9 +302,9 @@
           session.stream.inputFinished();
           while (recognizer.isReady(session.stream)) recognizer.decode(session.stream);
           var finalText = recognizer.getResult(session.stream).text || session.lastText || '';
-          if (finalText.trim()) insertTranscript(session.field, finalText);
+          if (finalText.trim() && finalText.trim() !== session.lastEmitted) { session.lastEmitted = finalText.trim(); insertTranscript(session.field, finalText); }
         } catch (e) {
-          if (session.lastText) insertTranscript(session.field, session.lastText);
+          if (session.lastText && session.lastText !== session.lastEmitted) { session.lastEmitted = session.lastText; insertTranscript(session.field, session.lastText); }
         }
         try { session.stream.free(); } catch (e) {}
       }
@@ -371,7 +371,8 @@
         source: source,
         processor: processor,
         stream: stream,
-        lastText: ''
+        lastText: '',
+        lastEmitted: ''
       };
       active = session;
 
@@ -399,7 +400,7 @@
         if (text) session.lastText = text;
         if (engine.isEndpoint(stream)) {
           var completedText = text || session.lastText;
-          if (completedText) insertTranscript(field, completedText);
+          if (completedText && completedText !== session.lastEmitted) { session.lastEmitted = completedText; insertTranscript(field, completedText); }
           session.lastText = '';
           engine.reset(stream);
         }
