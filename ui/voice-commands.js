@@ -202,10 +202,58 @@
     try { var K = window.TeachMateKnowledge, found = K && K.findClass && K.findClass(t); return !!(found && found.hit && found.hit.length === 1); } catch (e) { return false; }
   }
 
+  /* ---------- intent-first resolver ----------
+   * Resolve the teacher's purpose and data before template scoring.  The old
+   * scorer remains only as a controlled fallback for commands that do not
+   * carry an entity (for example, “show attendance history”). */
+  function taskById(id) { return tasks().filter(function (task) { return task.id === id; })[0] || null; }
+  function direct(task, params, t) { return task ? { run: { task: task, params: params || {} }, t: t, fuzzy: false, low: false } : null; }
+  function navIntent(t) {
+    var routes = [
+      { re: /^(?:please )?(?:open|show|go to|take me to|view) (?:the )?(?:attendance|attendance register)$/, id: 'nav_attendance' },
+      { re: /^(?:please )?(?:open|show|go to|take me to|view) (?:the )?(?:results|result tracking|marks)$/, id: 'nav_results' },
+      { re: /^(?:please )?(?:open|show|go to|take me to|view) (?:the )?(?:fees|fee tracking|payments)$/, id: 'nav_fees' },
+      { re: /^(?:please )?(?:open|show|go to|take me to|view) (?:the )?(?:class management|classes|learner list)$/, id: 'nav_classes' },
+      { re: /^(?:please )?(?:go )?(?:home|dashboard|main menu)$/, id: 'nav_home' }
+    ];
+    for (var i = 0; i < routes.length; i++) if (routes[i].re.test(t)) return taskById(routes[i].id);
+    return null;
+  }
+  function classIntent(t, cur) {
+    if (!cur || !A.CLASS_SEL || !A.CLASS_SEL[cur]) return null;
+    if (!/\b(fetch|get|bring|load|select|choose|switch|show|open|use)\b/.test(t)) return null;
+    var K = window.TeachMateKnowledge, found = K && K.findClass ? K.findClass(t) : null;
+    var explicit = /\b(?:grade|class|form)\b/.test(t);
+    if (!explicit && !(found && found.hit && found.hit.length === 1)) return null;
+    if (found && found.many && found.many.length) return { ask: 'Which class: ' + found.many.map(function (c) { return c.name; }).join(', ') + '?' };
+    var task = taskById('select_class');
+    return task ? direct(task, { t: t }, t) : null;
+  }
+  function markIntent(t, cur) {
+    if (cur !== 'results') return null;
+    var nums = t.match(/\b\d+(?:\.\d+)?\b/g) || [];
+    if (nums.length !== 1 || /\b(?:term|week|grade|class|form|date)\b/.test(t)) return null;
+    var score = Number(nums[0]);
+    if (!isFinite(score) || score < 0 || score > 100) return { ask: 'Marks must be between 0 and 100. Please say the learner and a mark in that range.' };
+    var K = window.TeachMateKnowledge, extracted = K && K.extract ? K.extract(t) : null;
+    if (!extracted || extracted.found.length !== 1) return null;
+    var match = extracted.found[0];
+    if (match.many && match.many.length > 1) return { ask: 'I found more than one learner matching that name. Please say the full name and class.' };
+    var task = taskById('res_enter_marks');
+    return task ? direct(task, { pairs: [{ name: match.student.name, score: score }] }, t) : null;
+  }
+  function resolveIntent(t, cur) {
+    var navTask = navIntent(t); if (navTask) return direct(navTask, {}, t);
+    var cls = classIntent(t, cur); if (cls) return cls;
+    var mark = markIntent(t, cur); if (mark) return mark;
+    return null;
+  }
+
   /* ---------- understand ---------- */
   var CLUE = 0.4, SORRY = 'Sorry, I didn\u2019t catch that.';
   function understand(text) {
     var t = clean(text), cur = A.currentSection ? A.currentSection() : null;
+    var resolved = resolveIntent(t, cur); if (resolved) return resolved;
     // Selecting a class is an intent of its own. It must never be mistaken for leaving a feature.
     if (isClassRequest(t) && cur && A.CLASS_SEL && A.CLASS_SEL[cur]) {
       var classTask = tasks().filter(function (task) { return task.id === 'select_class'; })[0];
