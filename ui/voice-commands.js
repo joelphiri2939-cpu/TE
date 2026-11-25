@@ -137,8 +137,9 @@
   var GLOBAL = { go_back: 1, nav_home: 1, help: 1, ui_press: 1, ui_set: 1, ui_toggle: 1, ui_list: 1, ui_scroll: 1, know_status: 1, know_overview: 1, know_learner_class: 1, know_class_list: 1, count_learners: 1, select_class: 1 };
   function taskSec(task) { return TASK_SEC[task.id] || SEC[task.id.split('_')[0]] || null; }
   function inScope(task, cur) {
-    if (task.id === 'select_class') return !!cur && !!A.CLASS_SEL[cur];       // only inside a feature that has a class list
-    return !cur || !!GLOBAL[task.id] || taskSec(task) === cur;
+    // Voice is a global app operator: every registered task remains available
+    // on every screen. The active section is only a preference for ties.
+    return true;
   }
   function rank(t, cur) {
     prep();
@@ -191,10 +192,69 @@
     return cap(d);
   }
 
+  /* ---------- explicit intent gateway ---------- */
+  function taskById(id) { return tasks().filter(function (task) { return task.id === id; })[0] || null; }
+  function direct(task, params, t) { return task ? { run: { task: task, params: params || {} }, t: t, fuzzy: false, low: false, heard: t } : null; }
+  function parseTask(id, t) {
+    var task = taskById(id); if (!task || !task.parse) return null;
+    var parsed = task.parse(t, true);
+    return parsed && parsed.params ? direct(task, parsed.params, t) : (parsed && parsed.ask ? parsed : null);
+  }
+  function explicitNavigation(t) {
+    var routes = [
+      [/^(?:please )?(?:open|show|go to|take me to|view) (?:the )?attendance(?: register)?$/, 'nav_attendance'],
+      [/^(?:please )?(?:open|show|go to|take me to|view) (?:the )?results?(?: tracking)?$/, 'nav_results'],
+      [/^(?:please )?(?:open|show|go to|take me to|view) (?:the )?marks?$/, 'nav_results'],
+      [/^(?:please )?(?:open|show|go to|take me to|view) (?:the )?fees?(?: tracking)?$/, 'nav_fees'],
+      [/^(?:please )?(?:open|show|go to|take me to|view) (?:the )?(?:class management|class list|learner list|classes)$/, 'nav_classes'],
+      [/^(?:please )?(?:go )?(?:home|dashboard|main menu)$/, 'nav_home'],
+      [/^(?:please )?(?:go back|return|exit|close this feature|close this page)$/, 'go_back']
+    ];
+    for (var i = 0; i < routes.length; i++) if (routes[i][0].test(t)) return direct(taskById(routes[i][1]), {}, t);
+    return null;
+  }
+  function explicitClass(t) {
+    if (!/\b(?:fetch|get|bring|load|select|choose|switch|use)\b/.test(t)) return null;
+    if (!/\b(?:grade|class|form)\b/.test(t)) {
+      var K = window.TeachMateKnowledge, f = K && K.findClass ? K.findClass(t) : null;
+      if (!f || !f.hit || f.hit.length !== 1) return null;
+    }
+    var task = taskById('select_class');
+    return task ? direct(task, { t: t }, t) : null;
+  }
+  function explicitMark(t, cur) {
+    if (cur !== 'results') return null;
+    var nums = t.match(/\b\d+(?:\.\d+)?\b/g) || [];
+    if (nums.length !== 1 || /\b(?:term|week|grade|class|form|date)\b/.test(t)) return null;
+    var score = Number(nums[0]);
+    if (score < 0 || score > 100) return { ask: 'Marks must be between 0 and 100. Please say the learner and a mark from 0 to 100.' };
+    var K = window.TeachMateKnowledge, ex = K && K.extract ? K.extract(t) : null;
+    if (!ex || ex.found.length !== 1) return null;
+    if (ex.found[0].many && ex.found[0].many.length > 1) return { ask: 'I found more than one matching learner. Please say the full name.' };
+    var task = taskById('res_enter_marks');
+    return task ? direct(task, { pairs: [{ name: ex.found[0].student.name, score: score }] }, t) : null;
+  }
+  function explicitOperators(t, cur) {
+    var nav = explicitNavigation(t); if (nav) return nav;
+    var mark = explicitMark(t, cur); if (mark) return mark;
+    var cls = explicitClass(t); if (cls) return cls;
+    var s = t.replace(/^please\s+/, '');
+    if (/^(?:press|tap|click|push|hit|touch)\b/.test(s)) return parseTask('ui_press', t);
+    if (/^(?:tick|untick|check|uncheck|enable|disable|switch on|switch off|turn on|turn off)\b/.test(s)) return parseTask('ui_toggle', t);
+    if (/^(?:set|change|select|choose|pick|make|fill|update|enter|type|put|write|fill in|add)\b/.test(s) && /\b(?:to|as|equals?|in|from|for|into|on)\b/.test(s)) return parseTask('ui_set', t);
+    if (/^scroll\b/.test(s)) return parseTask('ui_scroll', t);
+    if (/^(?:what|which|list|read|tell me)\b/.test(s) && /\b(?:buttons?|options?|can i do|on this (?:screen|page))\b/.test(s)) return parseTask('ui_list', t);
+    // A direct spoken button label should still use the visible-button operator.
+    if (A.uiGuess) { var g = A.uiGuess(t); if (g && g.score >= 0.94) return parseTask('ui_press', 'press ' + t); }
+    return null;
+  }
+
   /* ---------- understand ---------- */
   var CLUE = 0.4, SORRY = 'Sorry, I didn\u2019t catch that.';
   function understand(text) {
     var t = clean(text), cur = A.currentSection ? A.currentSection() : null;
+    var explicit = explicitOperators(t, cur);
+    if (explicit) return explicit;
     if (/\b(what can (i|you) say|what can you do|list commands|voice help|what commands)\b/.test(t))
       return { say: 'I can open attendance, results, fees, messages, class management and the lesson planner. Inside a feature I only listen for that feature: in attendance I mark learners present or absent, set the term and week, and save; in results I set the subject and test, enter marks by name, save and make report cards; in fees I tell you who has paid. I can fetch any class by name, and look up any learner in any class. After every change I show a pop-up so you can confirm or undo.', ok: true };
     var L = recall(t);
