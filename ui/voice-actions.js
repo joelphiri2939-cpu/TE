@@ -133,6 +133,13 @@
   add('go_back', 'go back', [['go back', 'close', 'back', 'exit', 'return', 'close this page']], {}, async function () {
     if (typeof window.closeFullPage === 'function') window.closeFullPage(); return { ok: true, message: 'I\u2019ve closed this page.' };
   });
+  add('close_dialog', 'close the open dialog', [['close', 'dismiss', 'cancel'], ['dialog', 'popup', 'form']], {}, async function () {
+    var roots = [].slice.call(document.querySelectorAll('[role="dialog"], .modal, .tm-modal, .popup')).filter(vis);
+    var root = roots.length ? roots[roots.length - 1] : null;
+    var close = root && root.querySelector('button[aria-label*="close" i], button[title*="close" i], .close, .modal-close, [data-dismiss="modal"], button');
+    if (!close) return { ok: false, message: 'I couldn\u2019t find an open dialog to close.' };
+    close.click(); return { ok: true, message: 'I\u2019ve closed the dialog.' };
+  });
   add('lesson_planner', 'open the lesson planner', [OPEN, ['lesson planner', 'lesson plan', 'planner']], {}, async function () {
     // TeachMate's own home screen opens the planner by clicking this (hidden) legacy button
     if (typeof window.openLessonPlanner === 'function') { try { window.openLessonPlanner(); return { ok: true, message: 'I\u2019ve asked TeachMate to open the lesson planner.' }; } catch (e) {} }
