@@ -196,8 +196,10 @@
     return /^(?:please )?(?:go back|go to previous(?: page)?|return to (?:the )?(?:dashboard|home)|close (?:this|the) (?:page|feature)|exit (?:this|the) (?:page|feature))$/.test(t);
   }
   function isClassRequest(t) {
-    return /\b(?:fetch|get|bring|load|select|choose|switch|show|open|use)\b/.test(t) &&
-      /\b(?:grade|class|form)\b/.test(t);
+    if (!/\b(?:fetch|get|bring|load|select|choose|switch|show|open|use)\b/.test(t)) return false;
+    if (/\b(?:grade|class|form)\b/.test(t)) return true;
+    // Use the actual school data for named classes such as "Blue House".
+    try { var K = window.TeachMateKnowledge, found = K && K.findClass && K.findClass(t); return !!(found && found.hit && found.hit.length === 1); } catch (e) { return false; }
   }
 
   /* ---------- understand ---------- */
