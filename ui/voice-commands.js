@@ -144,7 +144,7 @@
   function rank(t, cur) {
     prep();
     var toks = t.split(' ').filter(Boolean);
-    var res = tasks().filter(function (k) { return inScope(k, cur); }).map(function (task) {
+    var res = tasks().filter(function (k) { return inScope(k, cur) && k.id !== 'go_back'; }).map(function (task) {
       var num = 0, den = 0, min = 1, spec = 0;
       if (task.alsoIf && task.alsoIf(t)) return { task: task, base: 1, min: 1, score: 1.2 };
       task.gw.forEach(function (_, i) {
@@ -240,6 +240,7 @@
     var mark = explicitMark(t, cur); if (mark) return mark;
     var cls = explicitClass(t); if (cls) return cls;
     var s = t.replace(/^please\s+/, '');
+    if (/^(?:back|close|exit)$/.test(s)) return { ask: 'Please say “go back” to leave this feature, or “press close” to close a visible dialog.' };
     if (/^(?:press|tap|click|push|hit|touch)\b/.test(s)) return parseTask('ui_press', t);
     if (/^(?:tick|untick|check|uncheck|enable|disable|switch on|switch off|turn on|turn off)\b/.test(s)) return parseTask('ui_toggle', t);
     if (/^(?:set|change|select|choose|pick|make|fill|update|enter|type|put|write|fill in|add)\b/.test(s) && /\b(?:to|as|equals?|in|from|for|into|on)\b/.test(s)) return parseTask('ui_set', t);
