@@ -139,7 +139,6 @@
     alsoIf: function (t) {
       if (A.currentSection() !== 'results' || !/\b\d+(\.\d+)?\b/.test(t) || /\b(present|absent)\b/.test(t)) return false;
       if (/\b(in|into|on)\s+(?:the\s+)?[a-z ]*\b(name|field|box|school|teacher|phone|subject|category|level|date|term|week)\b/.test(t)) return false;
-      // Results context permits natural “Elias Ndlovu 70” commands without an action verb.
       return /\b(enter|record|put|give|add|write|score|scored|got|gets)\b/.test(t) || parseMarks(t).length > 0;
     },
     parse: function (t) {
