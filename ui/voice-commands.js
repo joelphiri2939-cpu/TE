@@ -243,6 +243,8 @@
     return task ? direct(task, { pairs: [{ name: match.student.name, score: score }] }, t) : null;
   }
   function resolveIntent(t, cur) {
+    if (/^(?:please )?(?:close|dismiss|cancel) (?:this |the )?(?:dialog|popup|form)$/.test(t)) return direct(taskById('close_dialog'), {}, t);
+    if (/^(?:please )?(?:close|back|exit)$/.test(t)) return { ask: 'Do you want to close the open dialog or leave this feature? Say “close this dialog” or “go back”.' };
     var navTask = navIntent(t); if (navTask) return direct(navTask, {}, t);
     var cls = classIntent(t, cur); if (cls) return cls;
     var mark = markIntent(t, cur); if (mark) return mark;
