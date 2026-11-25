@@ -1,7 +1,7 @@
 // TeachMate 3.0 — Service Worker
 // App shell is refreshed online; Kokoro runtime/model assets are cache-first
 // and retained in a dedicated cache for offline speech generation.
-const CACHE_VERSION = 'teachmate-v16';
+const CACHE_VERSION = 'teachmate-v17';
 const CACHE_NAME = `${CACHE_VERSION}-shell`;
 // Keep this name stable: it preserves the model cache created by the previous build.
 const TTS_MODEL_CACHE = 'teachmate-kokoro-v1_0-fp32';
