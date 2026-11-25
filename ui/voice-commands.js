@@ -143,7 +143,7 @@
   function rank(t, cur) {
     prep();
     var toks = t.split(' ').filter(Boolean);
-    var res = tasks().filter(function (k) { return inScope(k, cur); }).map(function (task) {
+    var res = tasks().filter(function (k) { return inScope(k, cur) && (k.id !== 'go_back' || isExitIntent(t)); }).map(function (task) {
       var num = 0, den = 0, min = 1, spec = 0;
       if (task.alsoIf && task.alsoIf(t)) return { task: task, base: 1, min: 1, score: 1.2 };
       task.gw.forEach(function (_, i) {
@@ -191,10 +191,24 @@
     return cap(d);
   }
 
+  /* Intent gates prevent a generic keyword score from changing the page. */
+  function isExitIntent(t) {
+    return /^(?:please )?(?:go back|go to previous(?: page)?|return to (?:the )?(?:dashboard|home)|close (?:this|the) (?:page|feature)|exit (?:this|the) (?:page|feature))$/.test(t);
+  }
+  function isClassRequest(t) {
+    return /\b(?:fetch|get|bring|load|select|choose|switch|show|open|use)\b/.test(t) &&
+      /\b(?:grade|class|form)\b/.test(t);
+  }
+
   /* ---------- understand ---------- */
   var CLUE = 0.4, SORRY = 'Sorry, I didn\u2019t catch that.';
   function understand(text) {
     var t = clean(text), cur = A.currentSection ? A.currentSection() : null;
+    // Selecting a class is an intent of its own. It must never be mistaken for leaving a feature.
+    if (isClassRequest(t) && cur && A.CLASS_SEL && A.CLASS_SEL[cur]) {
+      var classTask = tasks().filter(function (task) { return task.id === 'select_class'; })[0];
+      if (classTask) { var classFinish = finish(classTask, t); if (classFinish.task) return { run: classFinish, t: t, fuzzy: false, low: false, heard: text }; }
+    }
     if (/\b(what can (i|you) say|what can you do|list commands|voice help|what commands)\b/.test(t))
       return { say: 'I can open attendance, results, fees, messages, class management and the lesson planner. Inside a feature I only listen for that feature: in attendance I mark learners present or absent, set the term and week, and save; in results I set the subject and test, enter marks by name, save and make report cards; in fees I tell you who has paid. I can fetch any class by name, and look up any learner in any class. After every change I show a pop-up so you can confirm or undo.', ok: true };
     var L = recall(t);
