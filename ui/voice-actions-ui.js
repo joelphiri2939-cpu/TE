@@ -135,8 +135,13 @@
     return pairs;
   }
   add('res_enter_marks', 'enter marks for learners', [['enter', 'record', 'put', 'give', 'write', 'add', 'type', 'score', 'scored', 'got', 'gets'], ['marks', 'mark', 'score', 'scored', 'got', 'gets', 'for', 'percent', 'points']], {
-    classSection: 'results',
-    alsoIf: function (t) { return /\b(enter|record|put|give|add|write|score|scored|got|gets)\b/.test(t) && /\b\d+(\.\d+)?\b/.test(t) && !/\b(in|into|on)\s+(?:the\s+)?[a-z ]*\b(name|field|box|school|teacher|phone|subject|category|level|date|term|week)\b/.test(t) && !/\b(present|absent)\b/.test(t); },
+    classSection: 'results', risk: 'medium', confirmText: 'enter the stated marks on screen',
+    alsoIf: function (t) {
+      if (A.currentSection() !== 'results' || !/\b\d+(\.\d+)?\b/.test(t) || /\b(present|absent)\b/.test(t)) return false;
+      if (/\b(in|into|on)\s+(?:the\s+)?[a-z ]*\b(name|field|box|school|teacher|phone|subject|category|level|date|term|week)\b/.test(t)) return false;
+      // Results context permits natural “Elias Ndlovu 70” commands without an action verb.
+      return /\b(enter|record|put|give|add|write|score|scored|got|gets)\b/.test(t) || parseMarks(t).length > 0;
+    },
     parse: function (t) {
       var pairs = parseMarks(t);
       if (!pairs.length) return { ask: 'Which learner and which mark? Say, for example, \u201center 45 for Peter Banda\u201d.' };

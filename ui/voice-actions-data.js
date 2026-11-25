@@ -159,7 +159,11 @@
     return info('Class of ' + cand[0].name, cand.map(function (s) { return s.name + ': ' + K.className(s.classId); }), cand.length === 1 ? cand[0].name + ' is in ' + K.className(cand[0].classId) + '.' : cand[0].name + ' appears in ' + list(cand.map(function (s) { return K.className(s.classId); }), 4) + '.');
   });
   add('know_class_list', 'read the learners in a class', [['who is in', 'who are in', 'list learners in', 'list students in', 'learners in', 'students in', 'names of learners in', 'read the learners in', 'who is in the class']], {
-    parse: function (t) { return { params: { q: parseQ(t), cur: (document.getElementById('attendance-class') || {}).value || '' } }; }
+    parse: function (t) {
+      var section = A.currentSection && A.currentSection(), selId = A.CLASS_SEL && A.CLASS_SEL[section];
+      var sel = selId ? document.getElementById(selId) : null;
+      return { params: { q: parseQ(t), cur: (sel || {}).value || '' } };
+    }
   }, async function (p) {
     if (!(await ready())) return fail(NODATA);
     var cls = p.q.cls.hit ? p.q.cls.hit[0] : (p.cur && K.className(p.cur) ? { id: p.cur, name: K.className(p.cur) } : null);
