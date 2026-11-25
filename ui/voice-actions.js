@@ -70,7 +70,14 @@
     var opts = [].slice.call(sel.options).filter(function (o) { return o.value; });
     var m = t.match(/(?:grade|class|form)\s*(\d+)\s*([a-z])?\b/);
     var all = opts.map(function (o) { return o.text; });
-    if (!m) return { options: all, none: true };
+    if (!m) {
+      var heard = norm(t);
+      var named = opts.filter(function (o) {
+        var label = norm(o.text), value = norm(o.value);
+        return label.length > 2 && (heard.indexOf(label) >= 0 || (value.length > 2 && heard.indexOf(value) >= 0));
+      });
+      return { hits: named, options: all, none: !named.length };
+    }
     var hits = opts.filter(function (o) { return new RegExp('(^|[^0-9])' + m[1] + '([^0-9]|$)').test(o.text + ' ' + o.value); });
     if (hits.length > 1 && m[2] && m[2].length === 1) {
       var f = hits.filter(function (o) { return new RegExp('\\b' + m[1] + '\\s*' + m[2] + '|' + m[2] + 'form', 'i').test(o.text + ' ' + o.value); });
