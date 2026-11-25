@@ -469,7 +469,15 @@
     if (d.open) { ui.hearUntil = Date.now() + 350; ui.lastHeard = Date.now(); ui.amp = Math.max(ui.amp, clamp((d.level || 0) * 9, 0.2, 1)); }
   });
   onWin('teachmate:voice-state', function (e) { ui.engine = (e.detail && e.detail.state) || 'IDLE'; });
-  var sayEl = null, sayTimer = null;
+  var sayEl = null, sayTimer = null, heardTimer = null;
+  onWin('teachmate:voice-transcript', function (e) {
+    var d = e.detail || {};
+    if (!sayEl || !d.command || !d.text) return;
+    sayEl.textContent = 'Heard: ' + String(d.text).slice(0, 180);
+    sayEl.style.display = 'block';
+    clearTimeout(heardTimer);
+    heardTimer = setTimeout(function () { if (sayEl) sayEl.style.display = 'none'; }, 3500);
+  });
   function voiceAvailable() { var T = window.TeachMateTTS; return !!(('speechSynthesis' in window) || (T && T.isReady && T.isReady())); }
   onWin('teachmate:assistant-response', function (e) {            // a short note ONLY for problems, or when no voice can speak
     var d = e.detail || {};
